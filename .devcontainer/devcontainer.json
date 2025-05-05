@@ -1,0 +1,37 @@
+{
+    "name": "Yasmine-RetroT",
+    "image": "scdock-r-dev:v0.2", 
+    "runArgs": [
+        "--memory=58g",
+        "--cpus=9"
+    ],
+     "customizations": {
+         "vscode": {
+             "extensions": [
+                 // R Extensions
+                 //"rdebugger.r-debugger", # off due to rare use
+                 "reditorsupport.r",
+                 // Documentation Extensions
+                 //"quarto.quarto", # off due to lag
+                 "purocean.drawio-preview",
+                 //"redhat.vscode-yaml",
+                 "yzhang.markdown-all-in-one",
+                 // Docker Supporting Extensions
+                 "ms-azuretools.vscode-docker",
+                 "ms-vscode-remote.remote-containers",
+                 // Python Extensions
+                 "ms-python.python",
+                 //"ms-toolsai.jupyter" # off due to lag
+                 // AI Extensions 
+                 //"mnismt.cody-plus-plus"
+                 "sourcegraph.cody-ai"
+             ]
+         } 
+     },
+     "mounts": [
+        "source=/home/karijolichlab/data/Mogilenko_lab/data/Yasmine_RetroT/reads,target=/workspaces/Yasmine-retroT/0_Data/reads,type=bind,readonly",
+        "source=/home/karijolichlab/data/Mogilenko_lab/data/Yasmine_RetroT/reads_cntrl,target=/workspaces/Yasmine-retroT/0_Data/reads_cntrl,type=bind,readonly",
+        "source=/home/karijolichlab/data/Mogilenko_lab/data/GRCm39_mouse_genome,target=/workspaces/Yasmine-retroT/0_Data/ref,type=bind,readonly"
+     ],
+     "postStartCommand": "echo 'Hello World!' "
+ }

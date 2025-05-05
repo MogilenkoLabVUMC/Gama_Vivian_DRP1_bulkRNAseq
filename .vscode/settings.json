@@ -1,0 +1,9 @@
+{
+    "r.alwaysUseActiveTerminal": true,
+    "r.bracketedPaste": true,
+    "r.rterm.linux": "/usr/local/bin/radian",
+    "r.sessionWatcher": true,
+    "r.plot.useHttpgd": true,
+    "r.lsp.diagnostics": false
+}
+
