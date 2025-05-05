@@ -40,6 +40,19 @@ Below is a high-level overview of the repository:
 
 ### 1. Data Preprocessing
 
+```
+(python3.10) root@626b8a0970c4:/workspaces/GVDRP1/00_Data/human_ref/ref_genome# STAR --runMode genomeGenerate \
+     --runThreadN 8 \
+     --genomeDir ../ref_index100 \
+     --genomeFastaFiles ./GCF_000001405.40_GRCh38.p14_genomic.fna \
+     --sjdbGTFfile ./GCF_000001405.40_GRCh38.p14_genomic.fna \
+     --sjdbOverhang 100   
+        STAR --runMode genomeGenerate --runThreadN 8 --genomeDir ../ref_index100 --genomeFastaFiles ./GCF_000001405.40_GRCh38.p14_genomic.fna --sjdbGTFfile ./GCF_000001405.40_GRCh38.p14_genomic.fna --sjdbOverhang 100
+        STAR version: 2.7.11b   compiled: 2024-01-25T16:12:02-05:00 :/home/dobin/data/STAR/STARcode/STAR.master/source
+May 05 17:29:06 ..... started STAR run
+May 05 17:29:06 ... starting to generate Genome files
+```
+
 
 3. Quantification
 
