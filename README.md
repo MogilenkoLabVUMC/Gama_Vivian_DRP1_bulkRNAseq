@@ -15,42 +15,67 @@ Generate iPSC lines harbouring heterozygous G32A or R403C mutations → dual-SMA
 ## Experimental findings
 Both mutants retain the expected cortical-neuron marker profile but exhibit persistently hyper-elongated axonal mitochondria. Size-dependent, mutation-specific motility phenotypes (e.g. faster small mitochondria in R403C axons). Functional read-outs confirm diminished pre/post-synaptic marker volume and markedly exaggerated glutamate-evoked Ca²⁺ transients in both mutants
 
+### Novelty
+**Domain-resolved design** – analysing two distinct DRP1 mutations enables structure–function inference and partially explains heterogeneous patient presentations.  
+
+**Multi-modal validation** – transcriptomic, imaging and functional assays converge on impaired synapse/Ca²⁺ regulation, lending biological credibility to RNA-seq findings.  
+
+
+
 ## Repository Structure
 
 Below is a high-level overview of the repository:
 
-* `1_Scripts/`
-  * `runTrim.sh`, `runSTARalign_TEt.sh` — Preprocessing scripts used in the pipeline. Some archive scripts that were not directly used in this project.
-  * `R_scripts/` — R scripts for TE parsing, enrichment, GSEA, correlation, etc.
+* `00_Data/`
 
-* `2_Analysis/`
-  * `1b.TE_Enrich_analysis_all_samples.R` — Initial TE analysis on all samples.
-  * `1a.TE_Enrich_analysis_cleaned.R` — Analysis excluding A22, A14.
-  * `2.TE_GSEA_clean.R` — GSEA pooling & TE–pathway correlation.
+* `01_Scripts/`
 
-* `3_Results/`
-  * `Plots/`
-  * `GSEA/`
-  * `TE/`
-  * (… other result directories.)
+* `02_Analysis/`
+
+* `03_Results/`
 
 * `README.md` (this file)
+
+
 
 ## Data Processing Workflow
 
 ### 1. Data Preprocessing
 
+
+
+#### Preparing index
+
+GRCh38.p14 reference genome (hg38, GCF_000001405.40, release date Feb 3, 2022) for read mapping. 'GCF_000001405.40_GRCh38.p14_genomic.gff.gz' was used as the annotation. To run our custom QC scripts we pre-processed the annotation in the following manner. 
+
+**1. Prep refFlat from gtf**
 ```
-(python3.10) root@626b8a0970c4:/workspaces/GVDRP1/00_Data/human_ref/ref_genome# STAR --runMode genomeGenerate \
+./GTFtoRefFlat.sh -i GCF_000001405.40_GRCh38.p14_genomic.gtf.gz -o GCF_000001405.40_GRCh38.p14_genomic.refflat
+```
+
+**2. Prep ribosomal intervals**
+```
+./getRibosomalIntervals_from_gtf.sh -i GCF_000001405.40_GRCh38.p14_genomic.gtf.gz -r GCF_000001405.40_GRCh38.p14_genomic.fna.gz -o GCF_000001405.40_GRCh38.p14_genomic.ribosomal_intervals
+```
+
+**3. Get BED12 from GTF**
+```
+./GTFtoBED12.sh -i GCF_000001405.40_GRCh38.p14_genomic.gtf.gz -o GCF_000001405.40_GRCh38.p14_genomic.bed12
+```
+
+**4. (Optional) Change to ReSeQC compatible bed**
+```
+./BEDtoRefSeqBED_human.sh -i GCF_000001405.40_GRCh38.p14_genomic.bed12 -o GCF_000001405.40_GRCh38.p14_genomic.reseqc.bed12
+```
+
+
+```
+STAR --runMode genomeGenerate \
      --runThreadN 8 \
      --genomeDir ../ref_index100 \
      --genomeFastaFiles ./GCF_000001405.40_GRCh38.p14_genomic.fna \
-     --sjdbGTFfile ./GCF_000001405.40_GRCh38.p14_genomic.fna \
-     --sjdbOverhang 100   
-        STAR --runMode genomeGenerate --runThreadN 8 --genomeDir ../ref_index100 --genomeFastaFiles ./GCF_000001405.40_GRCh38.p14_genomic.fna --sjdbGTFfile ./GCF_000001405.40_GRCh38.p14_genomic.fna --sjdbOverhang 100
-        STAR version: 2.7.11b   compiled: 2024-01-25T16:12:02-05:00 :/home/dobin/data/STAR/STARcode/STAR.master/source
-May 05 17:29:06 ..... started STAR run
-May 05 17:29:06 ... starting to generate Genome files
+     --sjdbGTFfile ./GCF_000001405.40_GRCh38.p14_genomic.gtf \
+     --sjdbOverhang 100  
 ```
 
 
