@@ -33,6 +33,8 @@
 
         "source=/home/karijolichlab/data/Mogilenko_lab/pipeline/R_GSEA_visualisations,target=/workspaces/GVDRP1/01_Scripts/GSEA_module,type=bind",
 
+        "source=/home/karijolichlab/data/Mogilenko_lab/pipeline/bulkRNAseq_scripts,target==/workspaces/GVDRP1/01_Scripts/bash, type=bind",
+
         "source=/home/karijolichlab/data/Mogilenko_lab/data/GRCh38_hs_genome,target=/workspaces/GVDRP1/00_Data/human_ref,type=bind"
      ],
      "postStartCommand": "echo 'Hello World!' "
