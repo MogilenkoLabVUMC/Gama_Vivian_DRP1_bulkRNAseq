@@ -1,0 +1,26 @@
+﻿sample;genotype;days;rep;metadata;;cell_line;cell_type
+D35Ctrl_222;Control;D35;rep1;D35 days, Control, rep1;;PGP1;cortical neurons
+D35Ctrl_322;Control;D35;rep2;D35 days, Control, rep2;;PGP1;cortical neurons
+D35Ctrl_323;Control;D35;rep3;D35 days, Control, rep3;;PGP1;cortical neurons
+D35GAG5_222;G32A;D35;rep1;D35 days, G32A, rep1;;PGP1;cortical neurons
+D35GAG5_322;G32A;D35;rep2;D35 days, G32A, rep2;;PGP1;cortical neurons
+D35GAF7_322;G32A;D35;rep3;D35 days, G32A, rep3;;PGP1;cortical neurons
+D35GAG5_323;G32A;D35;rep4;D35 days, G32A, rep4;;PGP1;cortical neurons
+D35GAF7_323;G32A;D35;rep5;D35 days, G32A, rep5;;PGP1;cortical neurons
+D35RCD5_222;R403C;D35;rep1;D35 days, R403C, rep1;;PGP1;cortical neurons
+D35RCG3_222;R403C;D35;rep2;D35 days, R403C, rep2;;PGP1;cortical neurons
+D35RCD5_322;R403C;D35;rep3;D35 days, R403C, rep3;;PGP1;cortical neurons
+D35RCG3_322;R403C;D35;rep4;D35 days, R403C, rep4;;PGP1;cortical neurons
+D35RCD5_323;R403C;D35;rep5;D35 days, R403C, rep5;;PGP1;cortical neurons
+D35RCG3_323;R403C;D35;rep6;D35 days, R403C, rep6;;PGP1;cortical neurons
+D65Ctrl_1123;Control;D65;rep3;D65 days, Control, rep3;;PGP1;cortical neurons
+D65Ctrl_222;Control;D65;rep1;D65 days, Control, rep1;;PGP1;cortical neurons
+D65Ctrl_423;Control;D65;rep2;D65 days, Control, rep2;;PGP1;cortical neurons
+D65GA_1123;G32A;D65;rep4;D65 days, G32A, rep4;;PGP1;cortical neurons
+D65GAF7_222;G32A;D65;rep1;D65 days, G32A, rep1;;PGP1;cortical neurons
+D65GAF7_423;G32A;D65;rep2;D65 days, G32A, rep2;;PGP1;cortical neurons
+D65GAG5_423;G32A;D65;rep3;D65 days, G32A, rep3;;PGP1;cortical neurons
+D65RC_1123;R403C;D65;rep4;D65 days, R403C, rep4;;PGP1;cortical neurons
+D65RCG3_222;R403C;D65;rep1;D65 days, R403C, rep1;;PGP1;cortical neurons
+D65RCD5_423;R403C;D65;rep2;D65 days, R403C, rep2;;PGP1;cortical neurons
+D65RCG3_423;R403C;D65;rep3;D65 days, R403C, rep3;;PGP1;cortical neurons

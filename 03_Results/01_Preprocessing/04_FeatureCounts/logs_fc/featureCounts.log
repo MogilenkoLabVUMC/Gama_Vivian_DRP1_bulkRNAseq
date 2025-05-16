@@ -1,0 +1,260 @@
+------------------------------------------------
+featureCounts run: Fri May  9 15:47:14 CDT 2025
+Input directory: /in
+Output directory: /out
+Annotation file: /genome/GCF_000001405.40_GRCh38.p14_genomic.gtf
+Strandedness: 0 (unstranded)
+Feature type: exon
+GTF attribute: gene_id
+Threads: 8
+Pair mode: yes
+------------------------------------------------
+Processing BAM files: /in/D35Ctrl_222_Aligned.sortedByCoord.out.bam /in/D35Ctrl_322_Aligned.sortedByCoord.out.bam /in/D35Ctrl_323_Aligned.sortedByCoord.out.bam /in/D35GAF7_322_Aligned.sortedByCoord.out.bam /in/D35GAF7_323_Aligned.sortedByCoord.out.bam /in/D35GAG5_222_Aligned.sortedByCoord.out.bam /in/D35GAG5_322_Aligned.sortedByCoord.out.bam /in/D35GAG5_323_Aligned.sortedByCoord.out.bam /in/D35RCD5_222_Aligned.sortedByCoord.out.bam /in/D35RCD5_322_Aligned.sortedByCoord.out.bam /in/D35RCD5_323_Aligned.sortedByCoord.out.bam /in/D35RCG3_222_Aligned.sortedByCoord.out.bam /in/D35RCG3_322_Aligned.sortedByCoord.out.bam /in/D35RCG3_323_Aligned.sortedByCoord.out.bam /in/D65Ctrl_1123_Aligned.sortedByCoord.out.bam /in/D65Ctrl_222_Aligned.sortedByCoord.out.bam /in/D65Ctrl_423_Aligned.sortedByCoord.out.bam /in/D65GAF7_222_Aligned.sortedByCoord.out.bam /in/D65GAF7_423_Aligned.sortedByCoord.out.bam /in/D65GAG5_423_Aligned.sortedByCoord.out.bam /in/D65GA_1123_Aligned.sortedByCoord.out.bam /in/D65RCD5_423_Aligned.sortedByCoord.out.bam /in/D65RCG3_222_Aligned.sortedByCoord.out.bam /in/D65RCG3_423_Aligned.sortedByCoord.out.bam /in/D65RC_1123_Aligned.sortedByCoord.out.bam
+Number of BAM files: 25
+File: /in/D35Ctrl_222_Aligned.sortedByCoord.out.bam
+File: /in/D35Ctrl_322_Aligned.sortedByCoord.out.bam
+File: /in/D35Ctrl_323_Aligned.sortedByCoord.out.bam
+File: /in/D35GAF7_322_Aligned.sortedByCoord.out.bam
+File: /in/D35GAF7_323_Aligned.sortedByCoord.out.bam
+File: /in/D35GAG5_222_Aligned.sortedByCoord.out.bam
+File: /in/D35GAG5_322_Aligned.sortedByCoord.out.bam
+File: /in/D35GAG5_323_Aligned.sortedByCoord.out.bam
+File: /in/D35RCD5_222_Aligned.sortedByCoord.out.bam
+File: /in/D35RCD5_322_Aligned.sortedByCoord.out.bam
+File: /in/D35RCD5_323_Aligned.sortedByCoord.out.bam
+File: /in/D35RCG3_222_Aligned.sortedByCoord.out.bam
+File: /in/D35RCG3_322_Aligned.sortedByCoord.out.bam
+File: /in/D35RCG3_323_Aligned.sortedByCoord.out.bam
+File: /in/D65Ctrl_1123_Aligned.sortedByCoord.out.bam
+File: /in/D65Ctrl_222_Aligned.sortedByCoord.out.bam
+File: /in/D65Ctrl_423_Aligned.sortedByCoord.out.bam
+File: /in/D65GAF7_222_Aligned.sortedByCoord.out.bam
+File: /in/D65GAF7_423_Aligned.sortedByCoord.out.bam
+File: /in/D65GAG5_423_Aligned.sortedByCoord.out.bam
+File: /in/D65GA_1123_Aligned.sortedByCoord.out.bam
+File: /in/D65RCD5_423_Aligned.sortedByCoord.out.bam
+File: /in/D65RCG3_222_Aligned.sortedByCoord.out.bam
+File: /in/D65RCG3_423_Aligned.sortedByCoord.out.bam
+File: /in/D65RC_1123_Aligned.sortedByCoord.out.bam
+Starting featureCounts with strandedness=0 (unstranded)
+
+        ==========     _____ _    _ ____  _____  ______          _____  
+        =====         / ____| |  | |  _ \|  __ \|  ____|   /\   |  __ \ 
+          =====      | (___ | |  | | |_) | |__) | |__     /  \  | |  | |
+            ====      \___ \| |  | |  _ <|  _  /|  __|   / /\ \ | |  | |
+              ====    ____) | |__| | |_) | | \ \| |____ / ____ \| |__| |
+        ==========   |_____/ \____/|____/|_|  \_\______/_/    \_\_____/
+	  v2.0.2
+
+//========================== featureCounts setting ===========================\\
+||                                                                            ||
+||             Input files : 25 BAM files                                     ||
+||                                                                            ||
+||                           D35Ctrl_222_Aligned.sortedByCoord.out.bam        ||
+||                           D35Ctrl_322_Aligned.sortedByCoord.out.bam        ||
+||                           D35Ctrl_323_Aligned.sortedByCoord.out.bam        ||
+||                           D35GAF7_322_Aligned.sortedByCoord.out.bam        ||
+||                           D35GAF7_323_Aligned.sortedByCoord.out.bam        ||
+||                           D35GAG5_222_Aligned.sortedByCoord.out.bam        ||
+||                           D35GAG5_322_Aligned.sortedByCoord.out.bam        ||
+||                           D35GAG5_323_Aligned.sortedByCoord.out.bam        ||
+||                           D35RCD5_222_Aligned.sortedByCoord.out.bam        ||
+||                           D35RCD5_322_Aligned.sortedByCoord.out.bam        ||
+||                           D35RCD5_323_Aligned.sortedByCoord.out.bam        ||
+||                           D35RCG3_222_Aligned.sortedByCoord.out.bam        ||
+||                           D35RCG3_322_Aligned.sortedByCoord.out.bam        ||
+||                           D35RCG3_323_Aligned.sortedByCoord.out.bam        ||
+||                           D65Ctrl_1123_Aligned.sortedByCoord.out.bam       ||
+||                           D65Ctrl_222_Aligned.sortedByCoord.out.bam        ||
+||                           D65Ctrl_423_Aligned.sortedByCoord.out.bam        ||
+||                           D65GAF7_222_Aligned.sortedByCoord.out.bam        ||
+||                           D65GAF7_423_Aligned.sortedByCoord.out.bam        ||
+||                           D65GAG5_423_Aligned.sortedByCoord.out.bam        ||
+||                           D65GA_1123_Aligned.sortedByCoord.out.bam         ||
+||                           D65RCD5_423_Aligned.sortedByCoord.out.bam        ||
+||                           D65RCG3_222_Aligned.sortedByCoord.out.bam        ||
+||                           D65RCG3_423_Aligned.sortedByCoord.out.bam        ||
+||                           D65RC_1123_Aligned.sortedByCoord.out.bam         ||
+||                                                                            ||
+||             Output file : counts_matrix.txt                                ||
+||                 Summary : counts_matrix.txt.summary                        ||
+||              Paired-end : yes                                              ||
+||        Count read pairs : yes                                              ||
+||              Annotation : GCF_000001405.40_GRCh38.p14_genomic.gtf (GTF)    ||
+||      Dir for temp files : /out/raw_fc_output                               ||
+||                                                                            ||
+||                 Threads : 8                                                ||
+||                   Level : meta-feature level                               ||
+||      Multimapping reads : not counted                                      ||
+|| Multi-overlapping reads : not counted                                      ||
+||   Min overlapping bases : 1                                                ||
+||                                                                            ||
+\\============================================================================//
+
+//================================= Running ==================================\\
+||                                                                            ||
+|| Load annotation file GCF_000001405.40_GRCh38.p14_genomic.gtf ...           ||
+||    Features : 2300288                                                      ||
+||    Meta-features : 50037                                                   ||
+||    Chromosomes/contigs : 524                                               ||
+||                                                                            ||
+|| Process BAM file D35Ctrl_222_Aligned.sortedByCoord.out.bam...              ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 39010427                                             ||
+||    Successfully assigned alignments : 24357615 (62.4%)                     ||
+||    Running time : 0.52 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D35Ctrl_322_Aligned.sortedByCoord.out.bam...              ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 48094223                                             ||
+||    Successfully assigned alignments : 29070663 (60.4%)                     ||
+||    Running time : 0.95 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D35Ctrl_323_Aligned.sortedByCoord.out.bam...              ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 39947481                                             ||
+||    Successfully assigned alignments : 25049494 (62.7%)                     ||
+||    Running time : 0.58 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D35GAF7_322_Aligned.sortedByCoord.out.bam...              ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 40823715                                             ||
+||    Successfully assigned alignments : 25521653 (62.5%)                     ||
+||    Running time : 0.53 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D35GAF7_323_Aligned.sortedByCoord.out.bam...              ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 40636514                                             ||
+||    Successfully assigned alignments : 24764416 (60.9%)                     ||
+||    Running time : 0.47 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D35GAG5_222_Aligned.sortedByCoord.out.bam...              ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 40004874                                             ||
+||    Successfully assigned alignments : 23276400 (58.2%)                     ||
+||    Running time : 0.65 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D35GAG5_322_Aligned.sortedByCoord.out.bam...              ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 40179792                                             ||
+||    Successfully assigned alignments : 23456237 (58.4%)                     ||
+||    Running time : 0.46 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D35GAG5_323_Aligned.sortedByCoord.out.bam...              ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 40641204                                             ||
+||    Successfully assigned alignments : 25076056 (61.7%)                     ||
+||    Running time : 0.51 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D35RCD5_222_Aligned.sortedByCoord.out.bam...              ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 37119953                                             ||
+||    Successfully assigned alignments : 23564099 (63.5%)                     ||
+||    Running time : 0.28 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D35RCD5_322_Aligned.sortedByCoord.out.bam...              ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 36835422                                             ||
+||    Successfully assigned alignments : 21632351 (58.7%)                     ||
+||    Running time : 0.59 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D35RCD5_323_Aligned.sortedByCoord.out.bam...              ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 33892141                                             ||
+||    Successfully assigned alignments : 20879412 (61.6%)                     ||
+||    Running time : 0.40 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D35RCG3_222_Aligned.sortedByCoord.out.bam...              ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 49425581                                             ||
+||    Successfully assigned alignments : 28723140 (58.1%)                     ||
+||    Running time : 0.89 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D35RCG3_322_Aligned.sortedByCoord.out.bam...              ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 48216586                                             ||
+||    Successfully assigned alignments : 30178434 (62.6%)                     ||
+||    Running time : 0.65 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D35RCG3_323_Aligned.sortedByCoord.out.bam...              ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 42426972                                             ||
+||    Successfully assigned alignments : 26298248 (62.0%)                     ||
+||    Running time : 0.48 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D65Ctrl_1123_Aligned.sortedByCoord.out.bam...             ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 41720596                                             ||
+||    Successfully assigned alignments : 24929118 (59.8%)                     ||
+||    Running time : 0.54 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D65Ctrl_222_Aligned.sortedByCoord.out.bam...              ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 36994072                                             ||
+||    Successfully assigned alignments : 23004582 (62.2%)                     ||
+||    Running time : 0.51 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D65Ctrl_423_Aligned.sortedByCoord.out.bam...              ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 45489415                                             ||
+||    Successfully assigned alignments : 26896687 (59.1%)                     ||
+||    Running time : 0.70 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D65GAF7_222_Aligned.sortedByCoord.out.bam...              ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 61330920                                             ||
+||    Successfully assigned alignments : 37965110 (61.9%)                     ||
+||    Running time : 0.84 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D65GAF7_423_Aligned.sortedByCoord.out.bam...              ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 36776186                                             ||
+||    Successfully assigned alignments : 22077200 (60.0%)                     ||
+||    Running time : 0.41 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D65GAG5_423_Aligned.sortedByCoord.out.bam...              ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 36982900                                             ||
+||    Successfully assigned alignments : 22142266 (59.9%)                     ||
+||    Running time : 0.62 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D65GA_1123_Aligned.sortedByCoord.out.bam...               ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 34516635                                             ||
+||    Successfully assigned alignments : 19953309 (57.8%)                     ||
+||    Running time : 0.49 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D65RCD5_423_Aligned.sortedByCoord.out.bam...              ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 43215181                                             ||
+||    Successfully assigned alignments : 25868344 (59.9%)                     ||
+||    Running time : 0.66 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D65RCG3_222_Aligned.sortedByCoord.out.bam...              ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 36381781                                             ||
+||    Successfully assigned alignments : 23449589 (64.5%)                     ||
+||    Running time : 0.53 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D65RCG3_423_Aligned.sortedByCoord.out.bam...              ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 50548979                                             ||
+||    Successfully assigned alignments : 30295461 (59.9%)                     ||
+||    Running time : 0.63 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D65RC_1123_Aligned.sortedByCoord.out.bam...               ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 40739598                                             ||
+||    Successfully assigned alignments : 23743444 (58.3%)                     ||
+||    Running time : 0.64 minutes                                             ||
+||                                                                            ||
+|| Write the final count table.                                               ||
+|| Write the read assignment summary.                                         ||
+||                                                                            ||
+|| Summary of counting results can be found in file "/out/raw_fc_output/coun  ||
+|| ts_matrix.txt.summary"                                                     ||
+||                                                                            ||
+\\============================================================================//
+
+featureCounts analysis completed with strandedness=0 (unstranded)
+Results saved to /out/count_matrices_fc/sorted_counts_matrix.txt
