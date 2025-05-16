@@ -21,6 +21,19 @@ Both mutants retain the expected cortical-neuron marker profile but exhibit pers
 **Multi-modal validation** – transcriptomic, imaging and functional assays converge on impaired synapse/Ca²⁺ regulation, lending biological credibility to RNA-seq findings.  
 
 
+### General Approach Notes
+The study asks **how two domain-specific DRP1 mutations (G32A = GTPase, R403C = stalk) disturb cortical-neuron maturation**.  
+Phenotypes observed:
+
+- hyper-elongated, sluggishly trafficked mitochondria
+- widespread DEGs at 35 DIV (ion-channel, synapse, ROS) that largely normalise by 65 DIV
+- smaller/rarer synapses and exaggerated glutamate-evoked Ca²⁺ transients
+    
+
+The reviewers want a **mechanistic bridge** from _mitochondrial shape → nuclear transcriptome → synaptic outcome_.
+
+
+
 
 ## Repository Structure
 
