@@ -32,7 +32,7 @@
             "extensions": [
                 // R Extensions
                 //"rdebugger.r-debugger", # off due to rare use
-                // "reditorsupport.r",
+                "reditorsupport.r",
                 // Documentation Extensions
                 //"quarto.quarto", # off due to lag
                 // "purocean.drawio-preview",
