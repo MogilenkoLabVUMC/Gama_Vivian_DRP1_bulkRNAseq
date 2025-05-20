@@ -533,7 +533,7 @@ if (length(calcium_genes_present) > 0) {
   pheatmap(
     calcium_expr,
     main = "Expression of Calcium Signaling Genes",
-    annotation_col = annotation_df,
+    annotation_col = annot,
     annotation_colors = ann_colors,
     color = colorRampPalette(rev(brewer.pal(11, "RdBu")))(100),
     border_color = NA,
@@ -647,36 +647,13 @@ if (length(calcium_genes_present) > 0) {
       width = 8, height = 7
     )
   }
-  
-  # Create heatmap of logFC values for calcium genes across all contrasts
-  # Reshape calcium_gene_results to wide format for heatmap
-  calcium_logfc <- reshape2::dcast(
-    calcium_gene_results, 
-    rownames(calcium_gene_results) ~ Contrast, 
-    value.var = "logFC"
-  )
-  rownames(calcium_logfc) <- calcium_logfc$`rownames(calcium_gene_results)`
-  calcium_logfc <- calcium_logfc[, -1]  # Remove the gene name column
-  
-  # Create heatmap
-  pdf(file.path(calcium_dir, "calcium_genes_logFC_heatmap.pdf"), width = 12, height = length(calcium_genes_present) * 0.4 + 3)
-  pheatmap(
-    calcium_logfc,
-    main = "Log2 Fold Change of Calcium Signaling Genes Across Contrasts",
-    color = colorRampPalette(rev(brewer.pal(11, "RdBu")))(100),
-    breaks = seq(-3, 3, length.out = 101),  # Symmetric scale from -3 to 3
-    border_color = NA,
-    fontsize = 10,
-    fontsize_row = 10,
-    fontsize_col = 9,
-    cluster_rows = TRUE,
-    cluster_cols = TRUE
-  )
-  # gives Error in hclust(d, method = method) : 
-  # NA/NaN/Inf in foreign function call (arg 10)
-  dev.off()
 }
 
+
+
+
+
+  
 
 # finished here
 

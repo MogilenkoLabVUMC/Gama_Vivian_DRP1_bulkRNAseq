@@ -79,7 +79,11 @@ for (h in gsea_helpers){
 ## other single helpers
 source_if_present("01_Scripts/R_scripts/read_count_matrix.R")
 source_if_present("01_Scripts/GSEA_module/scripts/DE/plot_standard_volcano.R")
+source_if_present("/workspaces/GVDRP1/01_Scripts/GSEA_module/scripts/DE/create_fc_b_plot.R")
+source_if_present("/workspaces/GVDRP1/01_Scripts/GSEA_module/scripts/DE/create_MD_plot.R")
 source_if_present("01_Scripts/GSEA_module/scripts/DE/plotPCA.R")
+source_if_present("/workspaces/GVDRP1/01_Scripts/R_scripts/generate_vertical_volcanos.R")
+
 
 # -------------------------------------------------------------------- #
 # 2.  Read & pre-process data                                          #
@@ -111,8 +115,8 @@ contrasts <- makeContrasts(
     # 3. Interaction effects (difference-in-difference)
   # Question: Do the mutations alter the normal maturation trajectory?
   ## interaction
-  Int_G32A           = (D65_G32A  - D35_G32A)  - (D65_Control - D35_Control),
-  Int_R403C          = (D65_R403C - D35_R403C) - (D65_Control - D35_Control),
+  Maturation_G32A_specific = (D65_G32A  - D35_G32A)  - (D65_Control - D35_Control),
+  Maturation_R403C_specific = (D65_R403C - D35_R403C) - (D65_Control - D35_Control),
   levels = design)
 
 # -------------------------------------------------------------------- #
@@ -134,6 +138,30 @@ fit <- contrasts.fit(fit, contrasts) |>
        eBayes(robust = TRUE)
 
 de_results <- decideTests(fit, p.value = config$p_cutoff)
+
+# ------------------------------------------------------------
+# save DEGs lists
+# ------------------------------------------------------------
+deg_dir <- "/workspaces/GVDRP1/03_Results/02_Analysis/DE_results"
+dir.create(deg_dir, recursive = TRUE, showWarnings = FALSE)
+
+# ------------------------------------------------------------
+# 2.  Loop over every contrast in your 'contrasts' matrix
+# ------------------------------------------------------------
+for (co in colnames(contrasts)) {
+
+  ## limma::topTable – all rows, sorted by t
+  tt <- limma::topTable(fit,
+                        coef      = co,
+                        number    = Inf,     # keep everything
+                        sort.by   = "t")     # descending t-statistic
+
+  ## write with gene IDs as the first column
+  fname <- file.path(deg_dir, paste0(co, "_DE_results.csv"))
+  write.csv(tt, file = fname, row.names = TRUE)
+
+  message("saved: ", fname)
+}
 
 # -------------------------------------------------------------------- #
 # 4.  QC: sample correlation heat-map & MDS                            #
@@ -180,8 +208,9 @@ dev.off()
 # -------------------------------------------------------------------- #
 # 5.  Volcanoes & DEG numbers                                          #
 # -------------------------------------------------------------------- #
+# P-value volcanoes
 deg_dir      <- here::here(config$out_root, "DE_results")
-volcano_dir  <- here::here(config$out_root, "Plots/Volcano")
+volcano_dir  <- here::here(config$out_root, "Plots/Volcano/p")
 dir.create(deg_dir,     recursive = TRUE, showWarnings = FALSE)
 dir.create(volcano_dir, recursive = TRUE, showWarnings = FALSE)
 
@@ -189,8 +218,13 @@ dir.create(volcano_dir, recursive = TRUE, showWarnings = FALSE)
 make_all_volcanoes <- function(res_table, name){
   pdf(file.path(volcano_dir, paste0(name,"_standard.pdf")), 8, 7)
   print(create_standard_volcano(
-          res_table, p_cutoff = config$p_cutoff, fc_cutoff = config$fc_cutoff,
-          label_method = "sig", highlight_gene = config$calcium_genes,
+          res_table, 
+          p_cutoff = config$p_cutoff, 
+          fc_cutoff = config$fc_cutoff,
+          decision_by = "p",
+          label_method = "top", 
+          highlight_gene = config$calcium_genes,
+          x_breaks = 2,
           title = name))
   dev.off()
 }
@@ -200,46 +234,193 @@ for (co in colnames(contrasts)){
   write.csv(tbl, file = file.path(deg_dir, paste0(co,"_results.csv")))
   make_all_volcanoes(tbl, co)
 }
-# the are a couple of issues with volcano plots 
-# the legend color dots are intersected with symbol "a"
-# the labeled genes significant genes have same yellow color as its corresponding yellow significant color, which is fine, but sometimes makes them hard to read when yellow intersects yellow 
-# the highlighted calcium genes have the color of their group, depending if they are significant or not, but most of them are not, intersecting with the background genes dots of same color, making them impossible to read 
-# the colorscheme must be colorblind friendly
 
-# the volcano plot should have two visual styles: 
-# style 1: all three colors for various groups + highlighted genes color
-# style 2: only highlighted genes color
+# FDR-value volcanos
+deg_dir      <- here::here(config$out_root, "DE_results")
+volcano_dir  <- here::here(config$out_root, "Plots/Volcano/fdr")
+dir.create(deg_dir,     recursive = TRUE, showWarnings = FALSE)
+dir.create(volcano_dir, recursive = TRUE, showWarnings = FALSE)
 
-# the volcano plots should have two options
-# y axis = -log10(p)
-# y axis = -log10(FDR)
+## helper to make + save volcanoes -------------------------------------
+make_all_volcanoes <- function(res_table, name){
+  pdf(file.path(volcano_dir, paste0(name,"_standard.pdf")), 8, 7)
+  print(create_standard_volcano(
+          res_table, 
+          p_cutoff = 0.1, 
+          fc_cutoff = config$fc_cutoff,
+          decision_by = "fdr",
+          label_method = "sig", 
+          highlight_gene = config$calcium_genes,
+          x_breaks = 2,
+          title = name))
+  dev.off()
+}
 
-# all combinations of styles with all y axis styles should be saved
+for (co in colnames(contrasts)){
+  tbl <- topTable(fit, coef = co, number = Inf)
+  write.csv(tbl, file = file.path(deg_dir, paste0(co,"_results.csv")))
+  make_all_volcanoes(tbl, co)
+}
 
-# the combined vertical volcano plots in the old style should be preserved
+## Vertical volcanoes -------------------------------------
+volcano_dir_vert <- here::here(config$out_root, "Plots/Volcano")
+dir.create(volcano_dir_vert, recursive = TRUE, showWarnings = FALSE)
 
+# Create a list to store all contrast tables
+contrast_tables <- list()
+for (co in colnames(contrasts)) {
+  contrast_tables[[co]] <- topTable(fit, coef = co, number = Inf)
+}
+
+# Generate all the vertical volcano plot combinations
+# This will create both versions - with and without calcium gene highlighting
+generate_vertical_volcano_sets(contrast_tables, config, highlight_calcium = TRUE)
+
+## ---- MD plot -----------------------------------------------------------
+deg_dir      <- here::here(config$out_root, "DE_results")
+volcano_dir  <- here::here(config$out_root, "Plots/Volcano/MD")
+dir.create(deg_dir,     recursive = TRUE, showWarnings = FALSE)
+dir.create(volcano_dir, recursive = TRUE, showWarnings = FALSE)
+
+# Enhanced MD plot function
+make_md_plot <- function(fit, coef, name, status = NULL, highlight_genes = NULL) {
+  pdf(file.path(volcano_dir, paste0(name, "_MDplot.pdf")), 7, 6)
+  
+  # Get the DE results once
+  tt <- limma::topTable(fit, coef = coef, number = Inf, sort.by = "none")
+  
+  # Create the plot with our new function
+  gg <- create_MD_plot(
+    fit = fit,
+    coef = coef,
+    de_results = tt,
+    fc_cutoff = config$fc_cutoff,
+    fdr_cutoff = 0.05,
+    top_n = 5,
+    highlight_gene = highlight_genes,
+    label_method = "top",
+    title = paste("MD plot:", name),
+    show_grid = FALSE
+  )
+  
+  print(gg)
+  dev.off()
+}
+
+# Use the enhanced function in your analysis
+for (co in colnames(contrasts)) {
+  make_md_plot(fit, coef = co, name = co, highlight_genes = config$calcium_genes)
+}
+
+## ---- FC vs B -----------------------------------------------------------
+deg_dir      <- here::here(config$out_root, "DE_results")
+volcano_dir  <- here::here(config$out_root, "Plots/Volcano/FC-B")
+dir.create(deg_dir,     recursive = TRUE, showWarnings = FALSE)
+dir.create(volcano_dir, recursive = TRUE, showWarnings = FALSE)
+
+make_fc_vs_B <- function(top, name, fc_cutoff = config$fc_cutoff, highlight_genes = NULL) {
+  pdf(file.path(volcano_dir, paste0(name, "_FC_vs_B.pdf")), 7, 6)
+  
+  # Create the B vs FC plot using our new function
+  gg <- create_B_FC_plot(
+    top,
+    fc_cutoff = fc_cutoff,
+    B_cutoff = 0,  # Traditional threshold for B-statistic
+    top_n = 5,
+    highlight_gene = highlight_genes,
+    label_method = "top",
+    title = paste("log2FC vs B:", name),
+    show_grid = FALSE  # No grid lines as per your request
+  )
+  
+  print(gg)
+  dev.off()
+}
+
+for (co in colnames(contrasts)) {
+  top <- limma::topTable(fit, coef = co, number = Inf)
+  make_fc_vs_B(top, name = co, highlight_genes = config$calcium_genes)
+}
 
 
 ## DEG counts ----------------------------------------------------------
+## -------- prepare data ---------------------------------------------
+contrast_order <- c("G32A_vs_Ctrl_D35","R403C_vs_Ctrl_D35",
+                    "G32A_vs_Ctrl_D65","R403C_vs_Ctrl_D65",
+                    "Time_Ctrl","Time_G32A","Time_R403C",
+                    "Maturation_G32A_specific","Maturation_R403C_specific")
+
 deg_counts <- data.frame(
   Contrast = colnames(contrasts),
-  Up   = colSums(de_results > 0),
-  Down = colSums(de_results < 0))
-deg_counts$Total <- deg_counts$Up + deg_counts$Down
-write.csv(deg_counts, file = file.path(deg_dir,"DE_gene_counts.csv"))
+  Up   = colSums(de_results  > 0),
+  Down = colSums(de_results  < 0)) |>
+  transform(Contrast = factor(Contrast, levels = contrast_order))
 
-## bar plot (first-page bug fixed: call grid.newpage()) ----------------
-pdf(file.path(qc_dir,"DE_gene_counts.pdf"), 10, 6)
-grid::grid.newpage()
-ggplot(reshape2::melt(deg_counts[,c("Contrast","Up","Down")],
-                      id = "Contrast"),
-       aes(Contrast, value, fill = variable))+
-  geom_bar(stat="identity", position="dodge")+
-  scale_fill_manual(values = c(Up="#D95F02",Down="#1B9E77"))+
-  theme_minimal(base_size = 12)+
-  theme(axis.text.x = element_text(angle=45,hjust=1))+
-  labs(y="gene count", fill = "")
+deg_long <- tidyr::pivot_longer(deg_counts,
+                                c(Up,Down),
+                                names_to = "Direction",
+                                values_to = "Count")
+
+## -------- plot ------------------------------------------------------
+pdf(file.path(qc_dir,"DE_gene_counts.pdf"), 10, 6, onefile = TRUE)
+ggplot(deg_long,
+       aes(Contrast, Count, fill = Direction)) +
+  geom_col(position = position_dodge(width = .8), width = .7) +
+  geom_text(aes(label = Count),
+            vjust = -.2,
+            position = position_dodge(width = .8),
+            size = 3) +
+  scale_fill_manual(values = c(Up = "#D55E00", Down = "#0072B2")) + # Okabe-Ito
+  theme_minimal(base_size = 12) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        panel.grid.major.x = element_blank()) +
+  labs(y = "gene count", x = NULL, fill = "")
 dev.off()
+
+# Your observations make sense
+# contrast	genes with FDR < 0.05	comment
+# Time_G32A / Time_R403C	many	any gene whose expression changes between D35 and D65 inside the mutant line, irrespective of Control
+# Time_Ctrl	few / none	very few genes change in Control cells, so the Δ (D65–D35) is small
+# Maturation_Mutant_specific	~0	the model subtracts the small control Δ from the large mutant Δ gene-wise. If a gene also drifts a bit in Control in the same direction, the net effect shrinks; if directions differ, sign flips. In your data the subtraction removes most of the signal or inflates SE, so nothing stays below FDR 0.05.
+
+# Statistically, the interaction is harder to pass the FDR threshold because:
+
+# its effect size = (time change in mutant) – (time change in control) is often smaller than the raw mutant change, and
+
+# it carries the variance of two estimates, so the standard error grows.
+
+# Hence plenty of DE in Time_G32A but almost none in the interaction.
+
+# (You can confirm this by looking at the volcano for Maturation_G32A_specific – points will cluster around logFC ≈ 0.)
+
+# # *“Maturation drives large transcriptional shifts in the mutants but not in the
+# control line. However, after correcting for the modest changes that also
+# occur in control cells (interaction contrasts), almost none of the genes
+# remain significant at FDR < 0.05.
+
+# This indicates that most temporal changes are shared – or at least parallel
+# – between genotypes. The big block of DEGs in Time_G32A / Time_R403C
+# mainly reflects normal differentiation, not mutation-specific trajectories.
+
+# In other words, while the mutants exhibit strong maturation signatures,
+# these signatures do not diverge significantly from the control baseline
+# once the latter is taken into account.”*
+
+# You can add that a less stringent threshold or a gene-set level test
+# (GSEA of the interaction t-statistics) may still reveal subtle,
+# mutation-specific maturation pathways even when single-gene FDR control is too
+# strict.
+
+# Next steps if you want to see any interaction signal
+
+# Lower the FDR cut-off or use raw p < 0.01 just for exploration.
+
+# Run GSEA on the interaction contrasts – pathway-level aggregation boosts power.
+
+# Consider plotting the mean-difference (MD) plot (limma::plotMD) for each
+# interaction: it shows systematic shifts even when individual genes don’t
+# cross FDR.
+
 # for some reason generate a two page pdf, with first page empty, second with the plot 
 # need to have numbers of DE genes on top of the bars 
 # the order should be 
@@ -250,8 +431,33 @@ dev.off()
 # Time_Ctrl
 # Time_G32A
 # Time_R403C
-# Int_G32A
-# Int_R403C
+# Maturation_G32A_specific
+# Maturation_R403C_specific
+# For some reasone Maturation_G32A_specific and Maturation_R403C_specific show no significant genes, although there are some in current volcano plots which follow the p-value logic. But indeed it seems as if none cross FDR threshold . Same for Time_Ctrl
+
+
+
+# Create a list of significant genes for each contrast
+sig_genes_list <- list()
+for (contrast in colnames(contrasts)) {
+  sig_genes_list[[contrast]] <- rownames(fit$coefficients)[which(de_results[, contrast] != 0)]
+}
+
+# Create UpSet plot
+pdf(file.path(volcano_dir, "UpSet_plot_all_contrasts.pdf"), width = 12, height = 8)
+upset(fromList(sig_genes_list), order.by = "freq", nsets = length(sig_genes_list))
+dev.off()
+# for some reason doesn`t even list contrasts Maturation_G32A_specific and Maturation_R403C_specific
+# for some reason, saves a pdf with first page empty, second page with the correct plot 
+# but the results are very interesting 
+# I see a few distinct set intersections 
+# R403C_vs_Ctrl_D35, R403C_vs_Ctrl_D65, G32A_vs_Ctrl_D65, G32A_vs_Ctrl_D35 comprise an intersecting set of 9 genes 
+# Time_G32A and Time_R403C comprise an intersecting set of 38 genes 
+# Interestngly, These sets don`t intersect between each other
+# Interestengly, Time_Ctrl doesn`t intersect at all with the Time_G32A and Time_R403C
+# For me this is a signal that there is something distinct in mutants at baseline
+# And there is something unique in mutatnt in maturation. Do you agree? 
+# How do I dissect out which specific genes comprise these sets? How do I understand the role of these sets, if they are biologically significant? 
 
 # -------------------------------------------------------------------- #
 # 6.  Generic MSigDB-based GSEA                                        #
@@ -352,7 +558,7 @@ for (co in colnames(contrasts)){
 # In addition: There were 31 warnings (use warnings() to see them)
 
 # -------------------------------------------------------------------- #
-# 7.  SynGO GSEA (new)                                                 #
+# 7.  SynGO GSEA                                                       #
 # -------------------------------------------------------------------- #
 source("/workspaces/GVDRP1/01_Scripts/R_scripts/run_syngo_gsea.R")
 
@@ -371,9 +577,10 @@ source("/workspaces/GVDRP1/01_Scripts/R_scripts/run_syngo_gsea.R")
 # term2gene_syngo <- syngo_gmt(config$syngo_dir, config$syngo_ns)
 # head(term2gene_syngo)
 
+# function to prepare a gmt list 
 syngo_gmt <- function(syngo_dir, namespace = "CC") {
   requireNamespace("readxl", quietly = TRUE)
-
+  # read xlsx files
   ann <- readxl::read_xlsx(file.path(syngo_dir, "syngo_annotations.xlsx"))
   ont <- readxl::read_xlsx(file.path(syngo_dir, "syngo_ontologies.xlsx"))
 
@@ -393,6 +600,7 @@ syngo_gmt <- function(syngo_dir, namespace = "CC") {
   list(T2G = term2gene, T2N = term2name)
 }
 
+# execute gmt list preparation 
 syngo_lists <- syngo_gmt(config$syngo_dir, config$syngo_ns)
 
 for (co in colnames(contrasts)) {
@@ -402,57 +610,14 @@ for (co in colnames(contrasts)) {
                  T2N = syngo_lists$T2N)
 }
 
-# run_syngo_gsea <- function(tbl, contrast, term2gene){
-#   gene_vec <- sort(setNames(tbl$t, rownames(tbl)), decreasing = TRUE)
-#   set.seed(123)
-#   res <- GSEA(geneList = gene_vec,
-#               TERM2GENE = term2gene,
-#               pvalueCutoff = 1,
-#               pAdjustMethod = "fdr",
-#               eps = 0,
-#               by = "fgsea",
-#               nPermSimple = 100000)
-#   out_dir <- file.path(gsea_root, contrast, "SynGO")
-#   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
-#   saveRDS(res, file = file.path(out_dir, "GSEA_SynGO_result.rds"))
-#   # quick dotplot
-#   pdf(file.path(out_dir, "SynGO_dotplot.pdf"), 7, 5)
-#   print( gsea_dotplot(res, title = paste0(contrast," – SynGO"),
-#                       pos_color = "#fc8d59", neg_color = "#91bfdb") )
-#   dev.off()
-#   invisible(res)
-# }
-
-# for (co in colnames(contrasts)){
-#   tbl <- topTable(fit, coef = co, number = Inf)
-#   run_syngo_gsea(tbl, co, term2gene_syngo)
-# }
-# r$> for (co in colnames(contrasts)){                                                                               
-#       tbl <- topTable(fit, coef = co, number = Inf)                                                                                                                
-#       run_syngo_gsea(tbl, co, term2gene_syngo)                                                             
-#     }                                                                           
-
 # using 'fgsea' for GSEA analysis, please cite Korotkevich et al (2019).                                                                         
 # preparing geneSet collections...                                                                  
 # GSEA analysis...                                                                     
 # leading edge analysis...                                                                     
-# done...                                                                                                            
-# using 'fgsea' for GSEA analysis, please cite Korotkevich et al (2019).                                                                         
-# preparing geneSet collections...                                                                  
-# GSEA analysis...                                                                     
-# leading edge analysis...                                                                     
-# done...                                                                         
-# using 'fgsea' for GSEA analysis, please cite Korotkevich et al (2019).                                             
-# preparing geneSet collections...                                                                  
-# GSEA analysis...                                                                     
-# leading edge analysis...                                                                     
-# done...                                                                         
-# using 'fgsea' for GSEA analysis, please cite Korotkevich et al (2019).                                                                         
-# preparing geneSet collections...                                                                  
-# GSEA analysis...                                                                     
-# leading edge analysis...                                                                     
+# done...                                                                          ...                                                                   
 # done...                                                                         
 # using 'fgsea' for GSEA analysis, please cite Korotkevich et al (2019).                                     
+#....
 #....
 # Warning messages:                                                                       
 # 1: The `size` argument of `element_line()` is deprecated as of ggplot2 3.4.0.                                      
@@ -477,7 +642,7 @@ for (co in colnames(contrasts)) {
 #   for 'Int_G32A – SynGO' in 'mbcsToSbcs': - substituted for – (U+2013)                                             
 # 10: In grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  :                                          
 #   for 'Int_R403C – SynGO' in 'mbcsToSbcs': - substituted for – (U+2013)                                            
-                                                                                
+# for some reason the running sum plots that get saved for SynGo do not have colors and no legend, as if the plot doesn`t find correct corresponding color annotation that would correspond to the name of the top pathways 
 
 # -------------------------------------------------------------------- #
 # 8.  Calcium genes focus                                              #
@@ -500,7 +665,7 @@ if (length(present)){
            cluster_cols = FALSE, border_color = NA)
   dev.off()
 }
-# invalid or corrupted pdf file saved
+
 
 
 # -------------------------------------------------------------------- #
