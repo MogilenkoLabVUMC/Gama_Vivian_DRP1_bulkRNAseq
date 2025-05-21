@@ -69,6 +69,7 @@ gsea_helpers <- c(
   "scripts/GSEA/GSEA_plotting/gsea_running_sum_plot.R",
   "scripts/GSEA/GSEA_plotting/gsea_heatmap.R",
   "scripts/GSEA/GSEA_processing/run_gsea.R",
+  "scripts/GSEA/GSEA_processing/run_gsea_analysis.R",
   "scripts/DE/volcano_helpers.R"
 )
 
@@ -83,6 +84,7 @@ source_if_present("/workspaces/GVDRP1/01_Scripts/GSEA_module/scripts/DE/create_f
 source_if_present("/workspaces/GVDRP1/01_Scripts/GSEA_module/scripts/DE/create_MD_plot.R")
 source_if_present("01_Scripts/GSEA_module/scripts/DE/plotPCA.R")
 source_if_present("/workspaces/GVDRP1/01_Scripts/R_scripts/generate_vertical_volcanos.R")
+source_if_present("/workspaces/GVDRP1/01_Scripts/R_scripts/run_syngo_gsea.R")
 
 
 # -------------------------------------------------------------------- #
@@ -294,7 +296,7 @@ make_md_plot <- function(fit, coef, name, status = NULL, highlight_genes = NULL)
     fit = fit,
     coef = coef,
     de_results = tt,
-    fc_cutoff = config$fc_cutoff,
+    fc_cutoff = 1,
     fdr_cutoff = 0.05,
     top_n = 5,
     highlight_gene = highlight_genes,
@@ -377,66 +379,6 @@ ggplot(deg_long,
   labs(y = "gene count", x = NULL, fill = "")
 dev.off()
 
-# Your observations make sense
-# contrast	genes with FDR < 0.05	comment
-# Time_G32A / Time_R403C	many	any gene whose expression changes between D35 and D65 inside the mutant line, irrespective of Control
-# Time_Ctrl	few / none	very few genes change in Control cells, so the Δ (D65–D35) is small
-# Maturation_Mutant_specific	~0	the model subtracts the small control Δ from the large mutant Δ gene-wise. If a gene also drifts a bit in Control in the same direction, the net effect shrinks; if directions differ, sign flips. In your data the subtraction removes most of the signal or inflates SE, so nothing stays below FDR 0.05.
-
-# Statistically, the interaction is harder to pass the FDR threshold because:
-
-# its effect size = (time change in mutant) – (time change in control) is often smaller than the raw mutant change, and
-
-# it carries the variance of two estimates, so the standard error grows.
-
-# Hence plenty of DE in Time_G32A but almost none in the interaction.
-
-# (You can confirm this by looking at the volcano for Maturation_G32A_specific – points will cluster around logFC ≈ 0.)
-
-# # *“Maturation drives large transcriptional shifts in the mutants but not in the
-# control line. However, after correcting for the modest changes that also
-# occur in control cells (interaction contrasts), almost none of the genes
-# remain significant at FDR < 0.05.
-
-# This indicates that most temporal changes are shared – or at least parallel
-# – between genotypes. The big block of DEGs in Time_G32A / Time_R403C
-# mainly reflects normal differentiation, not mutation-specific trajectories.
-
-# In other words, while the mutants exhibit strong maturation signatures,
-# these signatures do not diverge significantly from the control baseline
-# once the latter is taken into account.”*
-
-# You can add that a less stringent threshold or a gene-set level test
-# (GSEA of the interaction t-statistics) may still reveal subtle,
-# mutation-specific maturation pathways even when single-gene FDR control is too
-# strict.
-
-# Next steps if you want to see any interaction signal
-
-# Lower the FDR cut-off or use raw p < 0.01 just for exploration.
-
-# Run GSEA on the interaction contrasts – pathway-level aggregation boosts power.
-
-# Consider plotting the mean-difference (MD) plot (limma::plotMD) for each
-# interaction: it shows systematic shifts even when individual genes don’t
-# cross FDR.
-
-# for some reason generate a two page pdf, with first page empty, second with the plot 
-# need to have numbers of DE genes on top of the bars 
-# the order should be 
-# G32A_vs_Ctrl_D35
-# R403C_vs_Ctrl_D35
-# G32A_vs_Ctrl_D65
-# R403C_vs_Ctrl_D65
-# Time_Ctrl
-# Time_G32A
-# Time_R403C
-# Maturation_G32A_specific
-# Maturation_R403C_specific
-# For some reasone Maturation_G32A_specific and Maturation_R403C_specific show no significant genes, although there are some in current volcano plots which follow the p-value logic. But indeed it seems as if none cross FDR threshold . Same for Time_Ctrl
-
-
-
 # Create a list of significant genes for each contrast
 sig_genes_list <- list()
 for (contrast in colnames(contrasts)) {
@@ -445,19 +387,9 @@ for (contrast in colnames(contrasts)) {
 
 # Create UpSet plot
 pdf(file.path(volcano_dir, "UpSet_plot_all_contrasts.pdf"), width = 12, height = 8)
+grid::grid.newpage(  )
 upset(fromList(sig_genes_list), order.by = "freq", nsets = length(sig_genes_list))
 dev.off()
-# for some reason doesn`t even list contrasts Maturation_G32A_specific and Maturation_R403C_specific
-# for some reason, saves a pdf with first page empty, second page with the correct plot 
-# but the results are very interesting 
-# I see a few distinct set intersections 
-# R403C_vs_Ctrl_D35, R403C_vs_Ctrl_D65, G32A_vs_Ctrl_D65, G32A_vs_Ctrl_D35 comprise an intersecting set of 9 genes 
-# Time_G32A and Time_R403C comprise an intersecting set of 38 genes 
-# Interestngly, These sets don`t intersect between each other
-# Interestengly, Time_Ctrl doesn`t intersect at all with the Time_G32A and Time_R403C
-# For me this is a signal that there is something distinct in mutants at baseline
-# And there is something unique in mutatnt in maturation. Do you agree? 
-# How do I dissect out which specific genes comprise these sets? How do I understand the role of these sets, if they are biologically significant? 
 
 # -------------------------------------------------------------------- #
 # 6.  Generic MSigDB-based GSEA                                        #
@@ -467,7 +399,7 @@ dir.create(gsea_root, recursive = TRUE, showWarnings = FALSE)
 
 ## wrapper that chooses HS vs MM automatically -------------------------
 run_gsea_hsmm <- function(tbl, contrast, species){
-  run_gsea_analysis(
+  results <- run_gsea_analysis(
       de_table     = tbl,
       analysis_name= contrast,
       rank_metric  = "t",
@@ -479,12 +411,21 @@ run_gsea_hsmm <- function(tbl, contrast, species){
       sample_order = ordered_samples,
       helper_root  = config$helper_root,
       save_plots   = TRUE)
+  
+  return(results)  # Explicitly return the results
 }
 
+# Create a list to store all GSEA results
+all_gsea_results <- list()
+
+# Run GSEA for each contrast and save results
 for (co in colnames(contrasts)){
   tbl <- topTable(fit, coef = co, number = Inf)
-  run_gsea_hsmm(tbl, co, species = "Homo sapiens")  # db_species picked up as HS
+  all_gsea_results[[co]] <- run_gsea_hsmm(tbl, co, species = "Homo sapiens")
 }
+
+
+
 # [DEBUG] sourcing 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/custom_minimal_theme.R
 # [run_gsea_analysis] helper not found → 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/custom_minimal_theme.R
 # [DEBUG] sourcing 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/GSEA/GSEA_plotting/gsea_plotting_utils.R
@@ -562,21 +503,6 @@ for (co in colnames(contrasts)){
 # -------------------------------------------------------------------- #
 source("/workspaces/GVDRP1/01_Scripts/R_scripts/run_syngo_gsea.R")
 
-# syngo_gmt <- function(syngo_dir, namespace = "CC"){
-#   require(readxl)
-#   ann  <- readxl::read_xlsx(file.path(syngo_dir,"syngo_annotations.xlsx"))
-#   ont  <- readxl::read_xlsx(file.path(syngo_dir,"syngo_ontologies.xlsx"))
-#   ann  <- subset(ann, go_domain == namespace)
-#   ont  <- unique(ont[,c("id","name")])
-#   term2gene <- merge(ann[,c("go_id","hgnc_symbol")],
-#                      ont, by.x="go_id", by.y="id")
-#   colnames(term2gene)[1:2] <- c("gs_name","gene_symbol")
-#   return(term2gene)
-# }
-
-# term2gene_syngo <- syngo_gmt(config$syngo_dir, config$syngo_ns)
-# head(term2gene_syngo)
-
 # function to prepare a gmt list 
 syngo_gmt <- function(syngo_dir, namespace = "CC") {
   requireNamespace("readxl", quietly = TRUE)
@@ -603,12 +529,46 @@ syngo_gmt <- function(syngo_dir, namespace = "CC") {
 # execute gmt list preparation 
 syngo_lists <- syngo_gmt(config$syngo_dir, config$syngo_ns)
 
+# Create a list to store all GSEA results
+syngo_gsea_results <- list()
+
+# Run GSEA for each contrast
 for (co in colnames(contrasts)) {
   tbl <- topTable(fit, coef = co, number = Inf)
-  run_syngo_gsea(tbl, co,
-                 T2G = syngo_lists$T2G,
-                 T2N = syngo_lists$T2N)
+  
+  # Close any lingering graphic devices before starting new contrast
+  while (dev.cur() > 1) dev.off()
+  
+  # Capture the result
+  syngo_gsea_results[[co]] <- run_syngo_gsea(
+    tbl, 
+    co,
+    T2G = syngo_lists$T2G,
+    T2N = syngo_lists$T2N,
+    sample_annotation = annot  # Add if you have it
+  )
+  
+  # Ensure all devices are closed after each iteration
+  while (dev.cur() > 1) dev.off()
 }
+
+head(as.data.frame(syngo_gsea_results$R403C_vs_Ctrl_D35$NES))
+
+order(abs(syngo_gsea_results$R403C_vs_Ctrl_D35$NES), decreasing = TRUE)[1:5]
+
+head(as.data.frame(all_gsea_results$R403C_vs_Ctrl_D35$wiki))
+
+order(abs(all_gsea_results$R403C_vs_Ctrl_D35$wiki$NES), decreasing = TRUE)[1:5]
+
+
+# gsea_running_sum
+gsea_obj@result$ID[gene_set_ids]
+
+syngo_gsea_results$G32A_vs_Ctrl_D35$ID
+
+all_gsea_results$R403C_vs_Ctrl_D35$hallmark$ID
+
+
 
 # using 'fgsea' for GSEA analysis, please cite Korotkevich et al (2019).                                                                         
 # preparing geneSet collections...                                                                  
@@ -643,6 +603,112 @@ for (co in colnames(contrasts)) {
 # 10: In grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  :                                          
 #   for 'Int_R403C – SynGO' in 'mbcsToSbcs': - substituted for – (U+2013)                                            
 # for some reason the running sum plots that get saved for SynGo do not have colors and no legend, as if the plot doesn`t find correct corresponding color annotation that would correspond to the name of the top pathways 
+
+
+###############################################################################
+##  SynGO enrichment of intersecting DEG signatures
+##  – baseline-9 genes (shared mutant baseline)
+##  – mat-38 genes    (shared mutant maturation response)
+###############################################################################
+# -------------------------------------------------------------------------
+#  synGO_enrich_symbol()  –  overlap-aware ORA with synonym resolution
+# -------------------------------------------------------------------------
+synGO_enrich_symbol <- function(query, name, universe,
+                                syngo_T2G, syngo_T2N, syngo_genes_xlsx,
+                                namespace_tag = "CC", qcut = .2,
+                                out_dir = out_root) {
+
+  requireNamespace("readxl",           quietly = TRUE)
+  requireNamespace("clusterProfiler",  quietly = TRUE)
+
+  # 1. synonym table --------------------------------------------------
+  canon_tbl <- readxl::read_xlsx(syngo_genes_xlsx,
+                                 col_types = "text")[, c("hgnc_symbol",
+                                                         "hgnc_synonyms")] |>
+               tidyr::separate_rows(hgnc_synonyms, sep = ",\\s*") |>
+               dplyr::transmute(canonical = hgnc_symbol,
+                                alias      = dplyr::coalesce(hgnc_synonyms,
+                                                             hgnc_symbol)) |>
+               dplyr::distinct()
+
+  to_canonical <- function(x)
+    dplyr::left_join(data.frame(alias = x), canon_tbl,
+                     by = "alias")$canonical
+
+  # 2. TERM2GENE fixed-length join -----------------------------------
+  syngo_T2G_can <- syngo_T2G |>
+    dplyr::left_join(canon_tbl, by = c(gene_symbol = "alias")) |>
+    dplyr::transmute(gs_name,
+                     gene_symbol = canonical) |>
+    dplyr::filter(!is.na(gene_symbol)) |>
+    dplyr::distinct()
+
+  print('Intersections with SynGo')
+  print(table(query %in% syngo_T2G_can$gene_symbol))
+
+  # 3. canonicalise query / universe ---------------------------------
+  canon_query    <- unique(na.omit(to_canonical(query)))
+  canon_universe <- unique(na.omit(to_canonical(universe)))
+
+  canon_query    <- intersect(canon_query,    syngo_T2G_can$gene_symbol)
+  canon_universe <- intersect(canon_universe, syngo_T2G_can$gene_symbol)
+
+  if (length(canon_query) < 3) {
+    warning(name, ": only ", length(canon_query),
+            " genes overlap SynGO after canonicalisation – skipping.")
+    return(invisible(NULL))
+  }
+
+  # 4. ORA ------------------------------------------------------------
+  enr <- clusterProfiler::enricher(
+           gene          = canon_query,
+           universe      = canon_universe,
+           TERM2GENE     = syngo_T2G_can,
+           TERM2NAME     = syngo_T2N,
+           pAdjustMethod = "BH",
+           qvalueCutoff  = qcut,
+           minGSSize     = 2)
+
+  if (is.null(enr) || nrow(enr@result) == 0) {
+    message(name, ": no SynGO term < ", qcut)
+    return(invisible(NULL))
+  }
+
+  # 5. output ---------------------------------------------------------
+  dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+  write.csv(enr@result,
+            file = file.path(out_dir, paste0(name, "_SynGO_enrich.csv")),
+            row.names = FALSE)
+
+  pdf(file.path(out_dir, paste0(name, "_SynGO_dotplot.pdf")), 7, 5)
+  print(
+    clusterProfiler::dotplot(enr, showCategory = 15) +
+      ggplot2::labs(title = sprintf("%s – SynGO (%s)", name, namespace_tag)) +
+      ggplot2::theme_minimal(base_size = 11)
+  )
+  dev.off()
+
+  invisible(enr)
+}
+
+## ------------------------------------------------------------------ ##
+## 4  run enrichment                                                  ##
+## ------------------------------------------------------------------ ##
+universe_all <- rownames(fit)          # every gene tested in limma
+
+## path to the original SynGO gene table
+syngo_gene_file <- file.path(config$syngo_dir, "syngo_genes.xlsx")
+
+enr_base9 <- synGO_enrich_symbol(baseline9, "baseline9",
+                                 universe_all,
+                                 syngo_lists$T2G, syngo_lists$T2N,
+                                 syngo_gene_file)
+
+enr_mat38 <- synGO_enrich_symbol(mat38,     "mat38",
+                                 universe_all,
+                                 syngo_lists$T2G, syngo_lists$T2N,
+                                 syngo_gene_file)
+
 
 # -------------------------------------------------------------------- #
 # 8.  Calcium genes focus                                              #
