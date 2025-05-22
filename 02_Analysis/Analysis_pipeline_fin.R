@@ -85,6 +85,7 @@ source_if_present("/workspaces/GVDRP1/01_Scripts/GSEA_module/scripts/DE/create_M
 source_if_present("01_Scripts/GSEA_module/scripts/DE/plotPCA.R")
 source_if_present("/workspaces/GVDRP1/01_Scripts/R_scripts/generate_vertical_volcanos.R")
 source_if_present("/workspaces/GVDRP1/01_Scripts/R_scripts/run_syngo_gsea.R")
+source_if_present("/workspaces/GVDRP1/01_Scripts/GSEA_module/scripts/GSEA/GSEA_plotting/plot_all_gsea_results.R")
 
 
 # -------------------------------------------------------------------- #
@@ -379,17 +380,21 @@ ggplot(deg_long,
   labs(y = "gene count", x = NULL, fill = "")
 dev.off()
 
+
+
 # Create a list of significant genes for each contrast
 sig_genes_list <- list()
 for (contrast in colnames(contrasts)) {
   sig_genes_list[[contrast]] <- rownames(fit$coefficients)[which(de_results[, contrast] != 0)]
 }
 
-# Create UpSet plot
-pdf(file.path(volcano_dir, "UpSet_plot_all_contrasts.pdf"), width = 12, height = 8)
-grid::grid.newpage(  )
-upset(fromList(sig_genes_list), order.by = "freq", nsets = length(sig_genes_list))
+# Create and save UpSet plot
+upset_plot <- upset(fromList(sig_genes_list), order.by = "freq", nsets = length(sig_genes_list))
+pdf(file.path(qc_dir, "UpSet_plot_all_contrasts.pdf"), width = 12, height = 8)
+print(upset_plot)
 dev.off()
+
+
 
 # -------------------------------------------------------------------- #
 # 6.  Generic MSigDB-based GSEA                                        #
@@ -397,7 +402,7 @@ dev.off()
 gsea_root <- here::here(config$out_root,"Plots/GSEA")
 dir.create(gsea_root, recursive = TRUE, showWarnings = FALSE)
 
-## wrapper that chooses HS vs MM automatically -------------------------
+## wrapper  -------------------------
 run_gsea_hsmm <- function(tbl, contrast, species){
   results <- run_gsea_analysis(
       de_table     = tbl,
@@ -419,84 +424,79 @@ run_gsea_hsmm <- function(tbl, contrast, species){
 all_gsea_results <- list()
 
 # Run GSEA for each contrast and save results
-for (co in colnames(contrasts)){
+for (co in colnames(contrasts)) {
+  message("==== Working on contrast: ", co, " ====")
   tbl <- topTable(fit, coef = co, number = Inf)
-  all_gsea_results[[co]] <- run_gsea_hsmm(tbl, co, species = "Homo sapiens")
+
+  safe_res <- tryCatch({
+    run_gsea_hsmm(tbl, co, species = "Homo sapiens")
+  }, error = function(e) {
+    message("❗ ERROR in GSEA for contrast ", co, ": ", e$message)
+    message("👀 Calling traceback():")
+    traceback()
+    NULL
+  })
+
+  all_gsea_results[[co]] <- safe_res
 }
 
 
 
-# [DEBUG] sourcing 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/custom_minimal_theme.R
-# [run_gsea_analysis] helper not found → 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/custom_minimal_theme.R
-# [DEBUG] sourcing 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/GSEA/GSEA_plotting/gsea_plotting_utils.R
-# [run_gsea_analysis] helper not found → 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/GSEA/GSEA_plotting/gsea_plotting_utils.R
-# [DEBUG] sourcing 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/GSEA/GSEA_plotting/gsea_dotplot.R
-# [run_gsea_analysis] helper not found → 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/GSEA/GSEA_plotting/gsea_dotplot.R
-# [DEBUG] sourcing 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/GSEA/GSEA_plotting/gsea_dotplot_facet.R
-# [run_gsea_analysis] helper not found → 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/GSEA/GSEA_plotting/gsea_dotplot_facet.R
-# [DEBUG] sourcing 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/GSEA/GSEA_plotting/gsea_barplot.R
-# [run_gsea_analysis] helper not found → 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/GSEA/GSEA_plotting/gsea_barplot.R
-# [DEBUG] sourcing 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/GSEA/GSEA_plotting/gsea_running_sum_plot.R
-# [run_gsea_analysis] helper not found → 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/GSEA/GSEA_plotting/gsea_running_sum_plot.R
-# [DEBUG] sourcing 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/GSEA/GSEA_plotting/gsea_heatmap.R
-# [run_gsea_analysis] helper not found → 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/GSEA/GSEA_plotting/gsea_heatmap.R
-# [DEBUG] sourcing 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/GSEA/GSEA_processing/run_gsea.R
-# [run_gsea_analysis] helper not found → 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/GSEA/GSEA_processing/run_gsea.R
-# [DEBUG] sourcing 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/DE/volcano_helpers.R
-# [run_gsea_analysis] helper not found → 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/DE/volcano_helpers.R
-# ▶  Hallmark
-# Fetching MSigDB sets for species='Homo sapiens', db_species='MM', collection='H', subcollection=''
-# Running clusterProfiler::GSEA...
-# GSEA completed successfully.
-# ▶  GO BP
-# Fetching MSigDB sets for species='Homo sapiens', db_species='MM', collection='C5', subcollection='GO:BP'
-# Running clusterProfiler::GSEA...
-#...
-# ▶  GO CC
-# Fetching MSigDB sets for species='Homo sapiens', db_species='MM', collection='C5', subcollection='GO:CC'
-# Running clusterProfiler::GSEA...
-# GSEA completed successfully.
-# ▶  KEGG
-# Fetching MSigDB sets for species='Homo sapiens', db_species='MM', collection='C2', subcollection='CP:KEGG_MEDICUS'
-# Running clusterProfiler::GSEA...
-# GSEA completed successfully.
-# ▶  Reactome
-# Fetching MSigDB sets for species='Homo sapiens', db_species='MM', collection='C2', subcollection='CP:REACTOME'
-# Running clusterProfiler::GSEA...
-# GSEA completed successfully.
-# ▶  WikiPath
-# Fetching MSigDB sets for species='Homo sapiens', db_species='MM', collection='C2', subcollection='CP:WIKIPATHWAYS'
-# Running clusterProfiler::GSEA...
-# GSEA completed successfully.
-# [DEBUG] sourcing 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/custom_minimal_theme.R
-# [run_gsea_analysis] helper not found → 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/custom_minimal_theme.R
-# [DEBUG] sourcing 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/GSEA/GSEA_plotting/gsea_plotting_utils.R
-# [run_gsea_analysis] helper not found → 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/GSEA/GSEA_plotting/gsea_plotting_utils.R
-# [DEBUG] sourcing 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/GSEA/GSEA_plotting/gsea_dotplot.R
-# [run_gsea_analysis] helper not found → 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/GSEA/GSEA_plotting/gsea_dotplot.R
-# [DEBUG] sourcing 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/GSEA/GSEA_plotting/gsea_dotplot_facet.R
-# [run_gsea_analysis] helper not found → 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/GSEA/GSEA_plotting/gsea_dotplot_facet.R
-# [DEBUG] sourcing 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/GSEA/GSEA_plotting/gsea_barplot.R
-# [run_gsea_analysis] helper not found → 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/GSEA/GSEA_plotting/gsea_barplot.R
-# [DEBUG] sourcing 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/GSEA/GSEA_plotting/gsea_running_sum_plot.R
-# [run_gsea_analysis] helper not found → 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/GSEA/GSEA_plotting/gsea_running_sum_plot.R
-# [DEBUG] sourcing 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/GSEA/GSEA_plotting/gsea_heatmap.R
-# [run_gsea_analysis] helper not found → 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/GSEA/GSEA_plotting/gsea_heatmap.R
-# [DEBUG] sourcing 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/GSEA/GSEA_processing/run_gsea.R
-# [run_gsea_analysis] helper not found → 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/GSEA/GSEA_processing/run_gsea.R
-# [DEBUG] sourcing 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/DE/volcano_helpers.R
-# [run_gsea_analysis] helper not found → 01_Scripts/GSEA_module/R_GSEA_visualisations/scripts/DE/volcano_helpers.R
-# ▶  Hallmark
-# Fetching MSigDB sets for species='Homo sapiens', db_species='MM', collection='H', subcollection=''
-# Running clusterProfiler::GSEA...
-# GSEA completed successfully.
-# ▶  GO BP
-# Fetching MSigDB sets for species='Homo sapiens', db_species='MM', collection='C5', subcollection='GO:BP'
-# Running clusterProfiler::GSEA...
-# GSEA completed successfully.
-# Error in if (abs(max.ES) > abs(min.ES)) { : 
-#   missing value where TRUE/FALSE needed
-# In addition: There were 31 warnings (use warnings() to see them)
+# all_gsea_results <- list()
+# gsea_root <- here::here(config$out_root,"Plots/GSEA")
+
+# for (co in colnames(contrasts)) {
+#   message("==== GSEA: ", co, " ====")
+#   tbl <- topTable(fit, coef=co, number=Inf)
+
+#   # 1) run, get back a list of gseaResult objects
+#   res_list <- tryCatch({
+#     run_gsea_analysis(
+#       de_table       = tbl,
+#       analysis_name  = co,
+#       species        = "Homo sapiens",
+#       output_dir     = gsea_root,
+#       save_plots     = FALSE,        # no plotting here
+#       helper_root    = config$helper_root
+#     )
+#   }, error=function(e){
+#     warning("❗ ERROR ❗ running GSEA for ",co,": ",e$message)
+#     message("👀 Calling traceback():")
+#     return(NULL)
+#   })
+#   all_gsea_results[[co]] <- res_list
+# }
+
+# for (co in colnames(contrasts)) {
+#   message("==== GSEA: ", co, " ====")
+#   plot_all_gsea_results(
+#     gsea_list       = all_gsea_results,
+#     analysis_name   = co,
+#     out_root        = gsea_root,
+#     n_pathways      = 30,
+#     padj_cutoff     = 0.05
+#   )
+# }
+
+# Then call plot_all_gsea_results with these parameters for each contrast
+for (co in colnames(contrasts)) {
+  message("==== GSEA: ", co, " ====")
+  this_res_list <- all_gsea_results[[co]]
+  if (is.null(this_res_list) || !length(this_res_list)) {
+    message("Skipping ", co, " (no results).")
+    next
+  }
+  
+  plot_all_gsea_results(
+  gsea_list = this_res_list,
+  analysis_name = co,
+  out_root = gsea_root,
+  n_pathways = 30,
+  padj_cutoff = 0.05
+ )
+
+}
+
 
 # -------------------------------------------------------------------- #
 # 7.  SynGO GSEA                                                       #
@@ -551,58 +551,6 @@ for (co in colnames(contrasts)) {
   # Ensure all devices are closed after each iteration
   while (dev.cur() > 1) dev.off()
 }
-
-head(as.data.frame(syngo_gsea_results$R403C_vs_Ctrl_D35$NES))
-
-order(abs(syngo_gsea_results$R403C_vs_Ctrl_D35$NES), decreasing = TRUE)[1:5]
-
-head(as.data.frame(all_gsea_results$R403C_vs_Ctrl_D35$wiki))
-
-order(abs(all_gsea_results$R403C_vs_Ctrl_D35$wiki$NES), decreasing = TRUE)[1:5]
-
-
-# gsea_running_sum
-gsea_obj@result$ID[gene_set_ids]
-
-syngo_gsea_results$G32A_vs_Ctrl_D35$ID
-
-all_gsea_results$R403C_vs_Ctrl_D35$hallmark$ID
-
-
-
-# using 'fgsea' for GSEA analysis, please cite Korotkevich et al (2019).                                                                         
-# preparing geneSet collections...                                                                  
-# GSEA analysis...                                                                     
-# leading edge analysis...                                                                     
-# done...                                                                          ...                                                                   
-# done...                                                                         
-# using 'fgsea' for GSEA analysis, please cite Korotkevich et al (2019).                                     
-#....
-#....
-# Warning messages:                                                                       
-# 1: The `size` argument of `element_line()` is deprecated as of ggplot2 3.4.0.                                      
-# ℹ Please use the `linewidth` argument instead.                                                                     
-# This warning is displayed once every 8 hours.                                                                      
-# Call `lifecycle::last_lifecycle_warnings()` to see where this warning was generated.                               
-# 2: In grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  :                                           
-#   for 'G32A_vs_Ctrl_D35 – SynGO' in 'mbcsToSbcs': - substituted for – (U+2013)                                     
-# 3: In grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  :                                           
-#   for 'R403C_vs_Ctrl_D35 – SynGO' in 'mbcsToSbcs': - substituted for – (U+2013)                                    
-# 4: In grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  :                                           
-#   for 'G32A_vs_Ctrl_D65 – SynGO' in 'mbcsToSbcs': - substituted for – (U+2013)                                     
-# 5: In grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  :                                           
-#   for 'R403C_vs_Ctrl_D65 – SynGO' in 'mbcsToSbcs': - substituted for – (U+2013)                                    
-# 6: In grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  :                                           
-#   for 'Time_Ctrl – SynGO' in 'mbcsToSbcs': - substituted for – (U+2013)                                            
-# 7: In grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  :                                           
-#   for 'Time_G32A – SynGO' in 'mbcsToSbcs': - substituted for – (U+2013)                                            
-# 8: In grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  :                                           
-#   for 'Time_R403C – SynGO' in 'mbcsToSbcs': - substituted for – (U+2013)                                           
-# 9: In grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  :                                           
-#   for 'Int_G32A – SynGO' in 'mbcsToSbcs': - substituted for – (U+2013)                                             
-# 10: In grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  :                                          
-#   for 'Int_R403C – SynGO' in 'mbcsToSbcs': - substituted for – (U+2013)                                            
-# for some reason the running sum plots that get saved for SynGo do not have colors and no legend, as if the plot doesn`t find correct corresponding color annotation that would correspond to the name of the top pathways 
 
 
 ###############################################################################
