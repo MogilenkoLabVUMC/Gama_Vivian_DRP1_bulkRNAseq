@@ -155,6 +155,7 @@ GRCh38.p14 reference genome (hg38, GCF_000001405.40, release date Feb 3, 2022) f
 ./BEDtoRefSeqBED_human.sh -i GCF_000001405.40_GRCh38.p14_genomic.bed12 -o GCF_000001405.40_GRCh38.p14_genomic.reseqc.bed12
 ```
 
+**5. Alignment**
 
 ```
 STAR --runMode genomeGenerate \
@@ -165,8 +166,63 @@ STAR --runMode genomeGenerate \
      --sjdbOverhang 100  
 ```
 
+**6. Post-Alignment QC**
 
-3. Quantification
+Infer experiment. Experiment non-stranded
+```
+for file in 03_Results/01_Preprocessing/02_Alignment/aligned_bam/*.bam; do \
+	echo "Strandedness of"
+	infer_experiment.py \
+		-i "$file" \
+		-r /data/human_ref/ref_genome/GCF_000001405.40_GRCh38.p14_genomic.bed12 \
+		-s 2000000 \
+		-q 30
+done
+```
+
+Running post-alignment QC scripts
+```
+docker run --rm -it \
+  --name post_alignQC \
+  -v "$HOME/projects/GVDRP1/03_Results/01_Preprocessing/02_Alignment/aligned_bam":/in:ro \
+  -v "$HOME/projects/GVDRP1/03_Results/01_Preprocessing/03_Post_AlignmentQC":/out \
+  -v "$HOME/projects/GVDRP1/03_Results/01_Preprocessing/03_Post_AlignmentQC/tmp":/out/tmp \
+  -e TMPDIR=/out/tmp \
+  -v "$HOME/data/GRCh38_hs_genome/ref_genome":/genome:ro \
+  -v "$HOME/pipeline/bulkRNAseq_scripts":/pipeline:ro \
+  scdock-r-dev:v0.2 \
+  bash -c "/pipeline/scripts_bash/getPostAlignmentQC.sh \
+             -i /in \
+             -o /out \
+             -j 2 \
+             -t 4 \
+             -r /genome/GCF_000001405.40_GRCh38.p14_genomic.fna \
+             -e /genome/GCF_000001405.40_GRCh38.p14_genomic.ribosomal_intervals \
+             -f /genome/GCF_000001405.40_GRCh38.p14_genomic.refflat \
+             -b /genome/GCF_000001405.40_GRCh38.p14_genomic.reseqc.bed12 \
+             --strand NONE \
+             --copy-sorted"
+```
+
+**7. Feature quantification**
+```
+docker run --rm -it \
+  --name feature_counts_run \
+  -v "$HOME/projects/GVDRP1/03_Results/01_Preprocessing/02_Alignment/aligned_bam":/in:ro \
+  -v "$HOME/projects/GVDRP1/03_Results/01_Preprocessing/04_FeatureCounts":/out \
+  -v "$HOME/data/GRCh38_hs_genome/ref_genome":/genome:ro \
+  -v "$HOME/pipeline/bulkRNAseq_scripts":/pipeline:ro \
+  scdock-r-dev:v0.2 \
+  bash -c "/pipeline/scripts_bash/runPostAlignmentQC.sh \
+             -i /in \
+             -o /out \
+             -a /genome/GCF_000001405.40_GRCh38.p14_genomic.gtf \
+             -s 0 \
+             -t 8 \
+             -f "exon" \
+             -g "gene_id" \
+             -p yes"
+```
 
 
 ### 2. Analysis Pipeline
