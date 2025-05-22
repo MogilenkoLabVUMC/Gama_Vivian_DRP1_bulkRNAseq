@@ -440,44 +440,6 @@ for (co in colnames(contrasts)) {
   all_gsea_results[[co]] <- safe_res
 }
 
-
-
-# all_gsea_results <- list()
-# gsea_root <- here::here(config$out_root,"Plots/GSEA")
-
-# for (co in colnames(contrasts)) {
-#   message("==== GSEA: ", co, " ====")
-#   tbl <- topTable(fit, coef=co, number=Inf)
-
-#   # 1) run, get back a list of gseaResult objects
-#   res_list <- tryCatch({
-#     run_gsea_analysis(
-#       de_table       = tbl,
-#       analysis_name  = co,
-#       species        = "Homo sapiens",
-#       output_dir     = gsea_root,
-#       save_plots     = FALSE,        # no plotting here
-#       helper_root    = config$helper_root
-#     )
-#   }, error=function(e){
-#     warning("❗ ERROR ❗ running GSEA for ",co,": ",e$message)
-#     message("👀 Calling traceback():")
-#     return(NULL)
-#   })
-#   all_gsea_results[[co]] <- res_list
-# }
-
-# for (co in colnames(contrasts)) {
-#   message("==== GSEA: ", co, " ====")
-#   plot_all_gsea_results(
-#     gsea_list       = all_gsea_results,
-#     analysis_name   = co,
-#     out_root        = gsea_root,
-#     n_pathways      = 30,
-#     padj_cutoff     = 0.05
-#   )
-# }
-
 # Then call plot_all_gsea_results with these parameters for each contrast
 for (co in colnames(contrasts)) {
   message("==== GSEA: ", co, " ====")
