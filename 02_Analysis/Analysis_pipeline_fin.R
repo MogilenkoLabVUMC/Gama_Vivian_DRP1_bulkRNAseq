@@ -24,7 +24,7 @@ config <- list(
   p_cutoff      = 0.05,
   fc_cutoff     = 2,
   calcium_genes = c(
-      "NEURONATIN","CACNG3","CACNA1C","CACNA1S","ATP2A1",
+      "NNAT","CACNG3","CACNA1C","CACNA1S","ATP2A1", # NNAT for Neuronatin gene
       "RYR1","MYLK3","CASR","VDR","STIM1","STIM2",
       "ORAI1","CALB1","CALR"),
   ## SynGO data (relative to repo root)
@@ -623,24 +623,145 @@ enr_mat38 <- synGO_enrich_symbol(mat38,     "mat38",
 # -------------------------------------------------------------------- #
 # 8.  Calcium genes focus                                              #
 # -------------------------------------------------------------------- #
-calc_dir <- here::here(config$out_root,"Calcium_genes")
-dir.create(calc_dir, recursive = TRUE, showWarnings = FALSE)
 
-present <- intersect(config$calcium_genes, rownames(logCPM))
-if (length(present)){
-  mat <- logCPM[present, ordered_samples]
+#------------------------#
+# Calcium heatmap 
+#------------------------#
 
-  ## clean NA / Inf for clustering
-  mat[!is.finite(mat)] <- NA
-  mat <- t(scale(t(mat)))    # row-scale
-  mat[is.na(mat)] <- 0
+# Create output directory for calcium gene analysis
+calcium_dir <- "03_Results/02_Analysis/Calcium_genes"
+dir.create(calcium_dir, recursive = TRUE, showWarnings = FALSE)
 
-  pdf(file.path(calc_dir,"calcium_expr_heatmap.pdf"), 12, .4*length(present)+3)
-  pheatmap(mat, annotation_col = annot, annotation_colors = ann_colors,
-           color = colorRampPalette(rev(brewer.pal(11,"RdBu")))(100),
-           cluster_cols = FALSE, border_color = NA)
+# Extract expression data for calcium genes that are present in our dataset
+calcium_genes_present <- config$calcium_genes[config$calcium_genes %in% rownames(logCPM)]
+
+
+if (length(calcium_genes_present) > 0) {
+  # Extract expression values
+  calcium_expr <- logCPM[calcium_genes_present, ordered_samples]
+  
+  # Create heatmap of expression across all samples
+  pdf(file.path(calcium_dir, "calcium_genes_expression_heatmap.pdf"), width = 12, height = length(calcium_genes_present) * 0.4 + 3)
+  pheatmap(
+    calcium_expr,
+    main = "Expression of Calcium Signaling Genes",
+    annotation_col = annot,
+    annotation_colors = ann_colors,
+    color = colorRampPalette(rev(brewer.pal(11, "RdBu")))(100),
+    border_color = NA,
+    fontsize = 10,
+    fontsize_row = 10,
+    fontsize_col = 9,
+    cluster_rows = TRUE,
+    cluster_cols = FALSE,
+    scale = "row"  # Scale by row for better visualization
+  )
   dev.off()
+  
+  # Create boxplots to compare expression across genotypes and timepoints
+  calcium_expr_melted <- reshape2::melt(
+    data.frame(Gene = rownames(calcium_expr), calcium_expr),
+    id.vars = "Gene",
+    variable.name = "Sample",
+    value.name = "Expression"
+  )
+  
+  # Add sample metadata
+  calcium_expr_melted$Genotype <- DGE$samples$genotype[match(as.character(calcium_expr_melted$Sample), rownames(DGE$samples))]
+  calcium_expr_melted$Days <- DGE$samples$days[match(as.character(calcium_expr_melted$Sample), rownames(DGE$samples))]
+  
+  # Create a multi-panel plot for each gene
+  pdf(file.path(calcium_dir, "calcium_genes_boxplots.pdf"), width = 12, height = 10)
+  
+  # Set up multi-panel layout
+  num_genes <- length(calcium_genes_present)
+  ncols <- min(3, num_genes)
+  nrows <- ceiling(num_genes / ncols)
+  par(mfrow = c(nrows, ncols))
+  
+  # Loop through each gene and create boxplot
+  for (gene in calcium_genes_present) {
+    gene_data <- subset(calcium_expr_melted, Gene == gene)
+    
+    # Create boxplot
+    boxplot(
+      Expression ~ Genotype:Days,
+      data = gene_data,
+      main = gene,
+      xlab = "",
+      ylab = "Log2 CPM",
+      col = c("#1B9E77", "#D95F02", "#7570B3", "#1B9E77", "#D95F02", "#7570B3"),
+      names = c("Ctrl D35", "G32A D35", "R403C D35", "Ctrl D65", "G32A D65", "R403C D65"),
+      las = 2  # Rotate x-axis labels
+    )
+    
+    # Add points for individual samples
+    stripchart(
+      Expression ~ Genotype:Days,
+      data = gene_data,
+      vertical = TRUE,
+      method = "jitter",
+      add = TRUE,
+      pch = 19,
+      col = "black",
+      cex = 0.6
+    )
+  }
+  
+  dev.off()
+  
+  # Test for differential expression of calcium genes in each contrast
+  calcium_gene_results <- data.frame()
+  
+  for (i in 1:ncol(contrasts)) {
+    contrast_name <- colnames(contrasts)[i]
+    
+    # Get results for this contrast
+    results <- topTable(fit, coef = i, number = Inf)
+    
+    # Extract results for calcium genes
+    calcium_results <- results[rownames(results) %in% calcium_genes_present, ]
+    
+    if (nrow(calcium_results) > 0) {
+      # Add contrast name
+      calcium_results$Contrast <- contrast_name
+      
+      # Combine with full results
+      calcium_gene_results <- rbind(calcium_gene_results, calcium_results)
+    }
+  }
+  
+  # Save results to file
+  write.csv(calcium_gene_results, file = file.path(calcium_dir, "calcium_genes_DE_results.csv"), row.names = TRUE)
+  
+  # Create volcano plots highlighting calcium genes for each contrast
+  for (i in 1:ncol(contrasts)) {
+    contrast_name <- colnames(contrasts)[i]
+    
+    # Get results for this contrast
+    results <- topTable(fit, coef = i, number = Inf)
+    
+    # Create volcano plot highlighting calcium genes
+    volcano_plot <- create_standard_volcano(
+      results,
+      p_cutoff = 0.05,
+      fc_cutoff = 1,  # Using lower FC threshold to capture more subtle changes
+      label_method = "none",  # Don't label all significant genes
+      highlight_gene = calcium_genes_present,  # Highlight calcium genes
+      # the problem is that the function highlights the gene names with the color of the dots, making text unreadable against the background of same color dots 
+      title = paste0(contrast_name, " - Calcium Genes")
+    )
+    
+    # Save the plot
+    ggsave(
+      file.path(calcium_dir, paste0(contrast_name, "_calcium_volcano.pdf")),
+      volcano_plot,
+      width = 8, height = 7
+    )
+  }
 }
+
+
 
 
 
