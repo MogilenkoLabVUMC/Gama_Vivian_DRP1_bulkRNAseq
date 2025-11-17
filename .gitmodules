@@ -1,0 +1,3 @@
+[submodule "01_Scripts/RNAseq-toolkit"]
+	path = 01_Scripts/RNAseq-toolkit
+	url = git@github.com:tony-zhelonkin/RNAseq-toolkit.git
