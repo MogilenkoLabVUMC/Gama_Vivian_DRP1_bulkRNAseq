@@ -17,8 +17,8 @@ services:
           cpus: '${MAX_CPUS:-20}'
           memory: ${MAX_MEMORY:-100}
         reservations:
-          cpus: '2'
-          memory: 8G
+          cpus: '5'
+          memory: 10G
 
   dev-archr:
     image: scdock-r-archr:v0.5.1
@@ -40,5 +40,5 @@ services:
           cpus: '${MAX_CPUS:-20}'
           memory: ${MAX_MEMORY:-100}
         reservations:
-          cpus: '2'
-          memory: 8G
+          cpus: '5'
+          memory: 10G

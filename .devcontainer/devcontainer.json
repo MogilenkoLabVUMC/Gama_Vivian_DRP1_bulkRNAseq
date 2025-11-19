@@ -45,6 +45,5 @@
       ]
     }
   },
-  "postCreateCommand": "bash -lc 'chmod +x .devcontainer/scripts/install_ai_tooling.sh && .devcontainer/scripts/install_ai_tooling.sh'",
   "postStartCommand": "bash -lc 'chmod +x .devcontainer/scripts/poststart_sanity.sh && .devcontainer/scripts/poststart_sanity.sh'"
 }
