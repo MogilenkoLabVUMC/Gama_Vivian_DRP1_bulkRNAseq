@@ -1,0 +1,47 @@
+# Dev container environment
+.devcontainer/.env
+.devcontainer/devcontaine.back.json
+
+# R specific
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj
+
+# Python specific
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.so
+.ipynb_checkpoints
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.log
+*.cache
+
+# Large data files (optional - uncomment if needed)
+# *.fastq
+# *.fastq.gz
+# *.bam
+# *.bai
+# *.fasta
+# *.fa
+test/

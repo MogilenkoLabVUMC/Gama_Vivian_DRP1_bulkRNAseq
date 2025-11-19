@@ -1,10 +1,12 @@
 {
     "name": "GVDRP1",
-    "image": "scdock-r-dev:v0.2",
-    "runArgs": [
-        "--memory=55g",
-        "--cpus=10"
-    ],
+    "dockerComposeFile": "docker-compose.yml",
+    "service": "dev-core",
+    "workspaceFolder": "/workspaces/Gama_Vivian_DRP1_bulkRNAseq",
+    "remoteUser": "devuser",
+    "updateRemoteUserUID": true,
+    "shutdownAction": "stopCompose",
+
     // ──────────────────────  VS Code settings  ──────────────────────
     "settings": {
         "files.watcherExclude": {
@@ -28,39 +30,21 @@
     },
     // ──────────────────────  Extensions  ──────────────────────
     "customizations": {
-        "vscode": {
-            "extensions": [
-                // R Extensions
-                //"rdebugger.r-debugger", # off due to rare use
-                "reditorsupport.r",
-                // Documentation Extensions
-                //"quarto.quarto", # off due to lag
-                // "purocean.drawio-preview",
-                //"redhat.vscode-yaml",
-                // "yzhang.markdown-all-in-one",
-                // Docker Supporting Extensions
-                // "ms-azuretools.vscode-docker",
-                "ms-vscode-remote.remote-containers",
-                // Python Extensions
-                // "ms-python.python",
-                //"ms-toolsai.jupyter" # off due to lag
-                // AI Extensions 
-                //"mnismt.cody-plus-plus"
-                "sourcegraph.cody-ai"
-            ]
-        }
-    },
-    "mounts": [
-        // *outside* the workspace mounts to prevent VS Code to scan them
-        "source=/home/karijolichlab/data/Mogilenko_lab/data/Gama_Vivian_DRP1/raw,target=/data/reads,type=bind,readonly",
-
-        "source=/home/karijolichlab/data/Mogilenko_lab/data/GRCh38_hs_genome,target=/data/human_ref,type=bind,readonly",
-
-        // *inside* the workspace mounts to prevent VS Code to scan them
-        "source=/home/karijolichlab/data/Mogilenko_lab/pipeline/R_GSEA_visualisations,target=/workspaces/GVDRP1/01_Scripts/GSEA_module,type=bind",
-
-        "source=/home/karijolichlab/data/Mogilenko_lab/pipeline/bulkRNAseq_scripts,target=/workspaces/GVDRP1/01_Scripts/bash,type=bind"
-    ],
-    // ──────────────────────  One-liner that raises the inotify limit  ──────────────────────
-    "postStartCommand": "sudo sysctl -w fs.inotify.max_user_watches=524288"
+    "vscode": {
+      "extensions": [
+        "rdebugger.r-debugger",
+        "reditorsupport.r",
+        "quarto.quarto",
+        "purocean.drawio-preview",
+        "redhat.vscode-yaml",
+        "yzhang.markdown-all-in-one",
+        "ms-azuretools.vscode-docker",
+        "ms-vscode-remote.remote-containers",
+        "ms-python.python",
+        "ms-toolsai.jupyter"
+      ]
+    }
+  },
+  "postCreateCommand": "bash -lc 'chmod +x .devcontainer/scripts/install_ai_tooling.sh && .devcontainer/scripts/install_ai_tooling.sh'",
+  "postStartCommand": "bash -lc 'chmod +x .devcontainer/scripts/poststart_sanity.sh && .devcontainer/scripts/poststart_sanity.sh'"
 }

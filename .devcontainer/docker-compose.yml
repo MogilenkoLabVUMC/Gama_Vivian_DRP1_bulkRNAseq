@@ -1,0 +1,44 @@
+services:
+  dev-core:
+    image: scdock-r-dev:v0.5.1
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    working_dir: /workspaces/Gama_Vivian_DRP1_bulkRNAseq
+    env_file: .env
+    ports:
+      - "8787:8787"  # httpgd graphics server
+    volumes:
+      - ${WORKSPACE_FOLDER:-.}:/workspaces/Gama_Vivian_DRP1_bulkRNAseq
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+    deploy:
+      resources:
+        limits:
+          cpus: '${MAX_CPUS:-20}'
+          memory: ${MAX_MEMORY:-100}
+        reservations:
+          cpus: '2'
+          memory: 8G
+
+  dev-archr:
+    image: scdock-r-archr:v0.5.1
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    working_dir: /workspaces/Gama_Vivian_DRP1_bulkRNAseq
+    env_file: .env
+    environment:
+      - CONTEXT7_API_KEY=${CONTEXT7_API_KEY}
+    ports:
+      - "8787:8787"  # httpgd graphics server
+    volumes:
+      - ${WORKSPACE_FOLDER:-.}:/workspaces/Gama_Vivian_DRP1_bulkRNAseq
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+    deploy:
+      resources:
+        limits:
+          cpus: '${MAX_CPUS:-20}'
+          memory: ${MAX_MEMORY:-100}
+        reservations:
+          cpus: '2'
+          memory: 8G

@@ -19,7 +19,7 @@ config <- list(
   metadata_file = "03_Results/01_Preprocessing/04_FeatureCounts/count_matrices_fc/metadata.csv",
   ## output roots
   out_root      = "03_Results/02_Analysis",
-  helper_root   = "01_Scripts/GSEA_module",   # <<-- external module mount
+  helper_root   = "01_Scripts/RNAseq-toolkit",   # <<-- git submodule
   ## analysis parameters
   p_cutoff      = 0.05,
   fc_cutoff     = 2,
@@ -79,13 +79,13 @@ for (h in gsea_helpers){
 
 ## other single helpers
 source_if_present("01_Scripts/R_scripts/read_count_matrix.R")
-source_if_present("01_Scripts/GSEA_module/scripts/DE/plot_standard_volcano.R")
-source_if_present("/workspaces/GVDRP1/01_Scripts/GSEA_module/scripts/DE/create_fc_b_plot.R")
-source_if_present("/workspaces/GVDRP1/01_Scripts/GSEA_module/scripts/DE/create_MD_plot.R")
-source_if_present("01_Scripts/GSEA_module/scripts/DE/plotPCA.R")
-source_if_present("/workspaces/GVDRP1/01_Scripts/R_scripts/generate_vertical_volcanos.R")
-source_if_present("/workspaces/GVDRP1/01_Scripts/R_scripts/run_syngo_gsea.R")
-source_if_present("/workspaces/GVDRP1/01_Scripts/GSEA_module/scripts/GSEA/GSEA_plotting/plot_all_gsea_results.R")
+source_if_present(config$helper_root, "scripts/DE/plot_standard_volcano.R")
+source_if_present(config$helper_root, "scripts/DE/create_fc_b_plot.R")
+source_if_present(config$helper_root, "scripts/DE/create_MD_plot.R")
+source_if_present(config$helper_root, "scripts/DE/plotPCA.R")
+source_if_present("01_Scripts/R_scripts/generate_vertical_volcanos.R")
+source_if_present("01_Scripts/R_scripts/run_syngo_gsea.R")
+source_if_present(config$helper_root, "scripts/GSEA/GSEA_plotting/plot_all_gsea_results.R")
 
 
 # -------------------------------------------------------------------- #
@@ -145,7 +145,7 @@ de_results <- decideTests(fit, p.value = config$p_cutoff)
 # ------------------------------------------------------------
 # save DEGs lists
 # ------------------------------------------------------------
-deg_dir <- "/workspaces/GVDRP1/03_Results/02_Analysis/DE_results"
+deg_dir <- here::here(config$out_root, "DE_results")
 dir.create(deg_dir, recursive = TRUE, showWarnings = FALSE)
 
 # ------------------------------------------------------------
@@ -463,7 +463,7 @@ for (co in colnames(contrasts)) {
 # -------------------------------------------------------------------- #
 # 7.  SynGO GSEA                                                       #
 # -------------------------------------------------------------------- #
-source("/workspaces/GVDRP1/01_Scripts/R_scripts/run_syngo_gsea.R")
+source_if_present("01_Scripts/R_scripts/run_syngo_gsea.R")
 
 # function to prepare a gmt list 
 syngo_gmt <- function(syngo_dir, namespace = "CC") {

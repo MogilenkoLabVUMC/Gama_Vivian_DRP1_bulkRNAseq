@@ -3,6 +3,25 @@
 ## Overview
 This repository contains the computational analysis pipeline for investigating the transcriptional effects of DRP1 mutations on neuronal maturation using bulk RNA-seq data.
 
+## Migration Note (2025-11-19)
+
+This repository has been migrated to a new workstation environment. The frozen version corresponding to the published/submitted analysis is tagged as **v1.0** (commit `d6ec164`).
+
+**Key Changes:**
+- Updated to [scdock-r-dev:v0.5.1](https://github.com/tony-zhelonkin/scbio-docker/tree/v0.5.1) container with Docker Compose configuration
+- All paths now use relative references for cross-workstation portability
+- RNAseq-toolkit integrated as a git submodule (no external mounts required)
+- Raw sequencing data dependencies removed (preprocessing complete, counts matrices available)
+
+**Container Details:**
+- **Image:** `scdock-r-dev:v0.5.1` from [scbio-docker](https://github.com/tony-zhelonkin/scbio-docker/tree/v0.5.1)
+- **Features:** R 4.x with Bioconductor, Python 3.x with scientific stack, Jupyter, RStudio Server
+- **Configuration:** Docker Compose with environment variable support
+
+**For setup instructions, see:** `MIGRATION.md`
+
+**For change tracking:** `CHANGELOG.md`
+
 ## Background
 Mitochondrial fission, mediated by DRP1, is vital for the rapid metabolic shifts that occur during cortical development and plays a critical role in neuronal development and function. De-novo DNM1L loss-of-function mutations (G32A in the GTP-ase domain, R403C in the stalk domain) are emerging in paediatric neuro-developmental cohorts but their domain-specific impact on neuronal maturation is unclear. This study examines two domain-specific DRP1 mutations: G32A (GTPase domain) and R403C (stalk domain), both identified in pediatric neurodevelopmental disorders. The analysis compares transcriptional profiles between mutant and control iPSC-derived cortical neurons at two developmental timepoints (35 and 65 days in vitro).
 
@@ -116,15 +135,23 @@ The reviewers want a **mechanistic bridge** from _mitochondrial shape → nuclea
 Below is a high-level overview of the repository:
 
 ```
-├── 00_Data/                    # Raw data and reference files
+├── 00_Data/                    # Reference data (SynGO database)
 ├── 01_Scripts/                 # Analysis scripts and custom functions
-│   ├── GSEA_module/           # External GSEA analysis module
+│   ├── RNAseq-toolkit/        # Git submodule: analysis toolkit and GSEA module
 │   └── R_scripts/             # Custom R functions for this project
 ├── 02_Analysis/               # Main analysis pipeline
 ├── 03_Results/                # Output files and results
-│   ├── 01_Preprocessing/      # Data preprocessing results
+│   ├── 01_Preprocessing/      # Data preprocessing results (includes counts matrices)
 │   └── 02_Analysis/           # Analysis results and plots
+├── .devcontainer/             # Docker container configuration
+├── MIGRATION.md               # Migration documentation
+├── CHANGELOG.md               # Change tracking
 └── README.md                  # This file
+```
+
+**Note:** The RNAseq-toolkit is a git submodule. Initialize it after cloning:
+```bash
+git submodule update --init --recursive
 ```
 ## Data Processing Workflow
 
