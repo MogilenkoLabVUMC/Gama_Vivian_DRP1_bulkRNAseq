@@ -1,0 +1,30 @@
+===============================================================================
+RIBOSOME PATHWAY ANALYSIS SUMMARY
+===============================================================================
+
+ANALYSIS DATE: 2025-11-20 14:32:11 
+
+PRIORITY CONTRASTS:
+  - Maturation_G32A_specific
+  - Maturation_R403C_specific
+
+RIBOSOME PATHWAY FINDINGS:
+
+
+RIBOSOMAL GENES:
+  Total unique genes: 0
+  Present in dataset: 0
+
+
+OUTPUT FILES:
+  Output directory: /workspaces/Gama_Vivian_DRP1_bulkRNAseq/03_Results/02_Analysis/Plots/Ribosome_analysis
+  Generated files:
+    - ribosomal_genes_expression_heatmap.pdf
+    - ribosomal_genes_average_expression_heatmap.pdf
+    - Maturation_G32A_specific_pathway_context.csv
+    - Maturation_G32A_specific_pathway_context_dotplot.pdf
+    - Maturation_R403C_specific_pathway_context.csv
+    - Maturation_R403C_specific_pathway_context_dotplot.pdf
+    - Individual running sum plots
+
+===============================================================================

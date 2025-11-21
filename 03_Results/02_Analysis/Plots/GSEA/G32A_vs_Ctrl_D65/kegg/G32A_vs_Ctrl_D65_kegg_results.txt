@@ -1,0 +1,25 @@
+GSEA Results Log
+================
+
+Analysis date: 2025-11-19 21:00:48 
+
+Summary Statistics:
+-----------------
+Total pathways analyzed: 1 
+Significant upregulated pathways (padj < 0.05 ): 0 
+Significant downregulated pathways (padj < 0.05 ): 1 
+Total significant pathways: 1 
+
+Significant Pathways:
+-------------------
+
+DOWNREGULATED PATHWAYS:
+=======================
+
+1 .  KEGG_MEDICUS_REFERENCE_TRANSLATION_INITIATION 
+   NES:  -2.572 
+   Adjusted p-value:  2.801e-07 
+   Leading edge size:  74 
+   Leading edge genes:  RPL13/RPL23/RPL21/RPL32/RPS15A/RPS12/RPS13/RPS26/RPL18/RPL15/RPL37/RPL7/RPS14/RPLP2/RPS27/RPL28/RPLP0/RPL24/RPS7/RPL39/RPL29/RPL13A/RPSA/RPS15/FAU/RPL6/RPS29/RPL26/RPS20/RPL35/RPL38/RPL11/RPS27A/RPS28/RPL8/RPL10A/RPL34/RPS21/RPS16/RPS10/RPLP1/RPL10/RPL36/RPL19/UBA52/RPL27/RPS23/RPL27A/RPS3/RPL23A/RPL14/RPL35A/RPL41/RPL36A/RPS4Y1 
+
+End of GSEA Results Log

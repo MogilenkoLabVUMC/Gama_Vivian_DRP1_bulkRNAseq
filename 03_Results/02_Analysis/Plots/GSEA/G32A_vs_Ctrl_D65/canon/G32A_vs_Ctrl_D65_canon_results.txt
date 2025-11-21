@@ -1,0 +1,25 @@
+GSEA Results Log
+================
+
+Analysis date: 2025-11-19 21:00:40 
+
+Summary Statistics:
+-----------------
+Total pathways analyzed: 1 
+Significant upregulated pathways (padj < 0.05 ): 0 
+Significant downregulated pathways (padj < 0.05 ): 1 
+Total significant pathways: 1 
+
+Significant Pathways:
+-------------------
+
+DOWNREGULATED PATHWAYS:
+=======================
+
+1 .  SIG_PIP3_SIGNALING_IN_CARDIAC_MYOCTES 
+   NES:  -1.822 
+   Adjusted p-value:  2.671e-02 
+   Leading edge size:  60 
+   Leading edge genes:  YWHAZ/CREB5/YWHAG/GSK3A/CDKN1B/NOLC1/F2RL2/PTK2/SHC1/PREX1/CDC42/PAK3/FOXO3/CREB3/PAK4/ERBB4/IRS2/CREB1/GAB1/BAD/PARD3/EBP/MET/CDK2/PTEN/YWHAQ/PDPK1/INPPL1/PAK2/AKT2/MYC 
+
+End of GSEA Results Log

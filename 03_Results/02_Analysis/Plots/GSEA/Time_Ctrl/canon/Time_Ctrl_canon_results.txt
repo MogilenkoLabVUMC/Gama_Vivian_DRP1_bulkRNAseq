@@ -1,0 +1,25 @@
+GSEA Results Log
+================
+
+Analysis date: 2025-11-19 21:01:20 
+
+Summary Statistics:
+-----------------
+Total pathways analyzed: 1 
+Significant upregulated pathways (padj < 0.05 ): 0 
+Significant downregulated pathways (padj < 0.05 ): 1 
+Total significant pathways: 1 
+
+Significant Pathways:
+-------------------
+
+DOWNREGULATED PATHWAYS:
+=======================
+
+1 .  SA_REG_CASCADE_OF_CYCLIN_EXPR 
+   NES:  -2.051 
+   Adjusted p-value:  2.800e-03 
+   Leading edge size:  11 
+   Leading edge genes:  CDK4/E2F4/E2F1/CCNE2/CCNA2/CDK2 
+
+End of GSEA Results Log

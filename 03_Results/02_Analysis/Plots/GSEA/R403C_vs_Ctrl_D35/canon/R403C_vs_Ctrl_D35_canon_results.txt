@@ -1,0 +1,25 @@
+GSEA Results Log
+================
+
+Analysis date: 2025-11-19 21:00:10 
+
+Summary Statistics:
+-----------------
+Total pathways analyzed: 1 
+Significant upregulated pathways (padj < 0.05 ): 1 
+Significant downregulated pathways (padj < 0.05 ): 0 
+Total significant pathways: 1 
+
+Significant Pathways:
+-------------------
+
+UPREGULATED PATHWAYS:
+=====================
+
+1 .  SA_MMP_CYTOKINE_CONNECTION 
+   NES:  1.932 
+   Adjusted p-value:  3.170e-02 
+   Leading edge size:  10 
+   Leading edge genes:  ACE/TNFRSF1A/SELL/IL6R/TNFRSF1B/TGFB2/TGFB1/IL1B 
+
+End of GSEA Results Log

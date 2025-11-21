@@ -1,0 +1,68 @@
+===============================================================================
+TRANSLATION PARADOX VISUALIZATION REPORT
+===============================================================================
+
+ANALYSIS DATE: 2025-11-21 00:42:27 
+
+CENTRAL FINDING:
+Paradoxical upregulation of ribosome biogenesis alongside downregulation of
+synaptic translation during critical period neuronal maturation (D35→D65)
+
+KEY PATHWAYS:
+
+PARADOX (GO BP):
+  Contrast                  Process                     FullName       NES
+1     G32A     Ribosome\nBiogenesis     GOBP_RIBOSOME_BIOGENESIS  2.254185
+2     G32A Cytoplasmic\nTranslation GOBP_CYTOPLASMIC_TRANSLATION -2.066108
+3    R403C     Ribosome\nBiogenesis     GOBP_RIBOSOME_BIOGENESIS  1.593129
+4    R403C Cytoplasmic\nTranslation GOBP_CYTOPLASMIC_TRANSLATION -1.835220
+           FDR GeneCount Category
+1 5.483200e-12       287   Making
+2 3.397126e-06       157    Using
+3 3.744487e-03       287   Making
+4 3.273422e-04       157    Using
+
+
+SYNAPTIC SPECIFICITY (SynGO):
+  Contrast  Compartment       NES          FDR GeneCount
+1     G32A  Presynaptic -2.902099 3.152540e-12        51
+2     G32A Postsynaptic -3.019304 1.882815e-15        65
+3    R403C  Presynaptic -2.712524 3.630000e-10        51
+4    R403C Postsynaptic -2.887121 2.509259e-12        65
+
+
+RIBOSOMAL PROTEIN STATISTICS:
+                  Category Count Percentage
+1   40S Ribosomal Proteins    29         NA
+2   60S Ribosomal Proteins    46         NA
+3 Total Ribosomal Proteins    75         NA
+4           40S in Dataset    24   82.75862
+5           60S in Dataset    45   97.82609
+6         Total in Dataset    69   92.00000
+
+
+OUTPUT FILES:
+  - PanelA_pathway_opposition.pdf (Biogenesis ↑ vs Translation ↓)
+  - PanelB_synaptic_compartments.pdf (Presynaptic vs Postsynaptic)
+  - PanelC_ribosomal_proteins_heatmap.pdf (Gene-level with baseline + maturation)
+  - paradox_pathway_statistics.csv
+  - syngo_synaptic_statistics.csv
+  - ribosomal_gene_summary.csv
+  - translation_paradox_report.txt
+
+PANEL C ENHANCEMENTS:
+  - Fixed color scheme (purple-white-green gradient avoids annotation conflict)
+  - Added baseline context (Time_Ctrl, D35 differences)
+  - Shows: Normal maturation | Baseline differences | Maturation-specific effects
+  - Significance markers (*, **, ***) for FDR < 0.05, 0.01, 0.001
+  - Column gaps separate contrast types for clarity
+  - IMPROVED LABELS: Explicit column names explain each contrast
+  - COMPARTMENT ANNOTATION: Synaptic (Both/Pre/Post only) vs Non-synaptic
+  - Explanatory subtitle clarifies baseline vs maturation effects
+
+BIOLOGICAL INTERPRETATION:
+Cells attempt to compensate for mitochondrial dysfunction by increasing
+ribosome production, but cannot utilize these ribosomes at synapses due to
+local ATP depletion, leading to failed synaptic maturation and seizures.
+
+===============================================================================

@@ -1,0 +1,78 @@
+===============================================================================
+CROSS-DATABASE POOLED DOTPLOT ANALYSIS (NEURONAL MATURATION FILTERED)
+===============================================================================
+
+ANALYSIS DATE: 2025-11-21 11:39:23 
+
+WORKFLOW:
+  1. Extract significant pathways from GSEA results (FDR < 0.05)
+  2. Apply neuronal maturation filtering (remove non-neuronal tissues)
+  3. Generate visualizations from filtered data
+
+PRIORITY CONTRASTS:
+  - Maturation_G32A_specific
+  - Maturation_R403C_specific
+  - Time_Ctrl
+  - G32A_vs_Ctrl_D65
+  - R403C_vs_Ctrl_D65
+
+DATABASE COLLECTIONS:
+
+Comprehensive version:
+  - hallmark
+  - gobp
+  - gocc
+  - gomf
+  - kegg
+  - reactome
+  - wiki
+  - canon
+  - tf
+  - syngo
+
+Focused version (manuscript):
+  - hallmark
+  - kegg
+  - reactome
+  - syngo
+
+
+FILTERING CRITERIA:
+EXCLUDED (non-neuronal tissues):
+  - Pancreas, beta cells
+  - Cardiac, heart, myocytes
+  - Kidney, renal
+  - Intestinal, colon
+  - Lung, respiratory
+  - Liver, bile acid
+  - Adipose, muscle (non-neural)
+  - Xenobiotic, coagulation, heme metabolism
+
+INCLUDED (neuronal-relevant):
+  - Neuron, synapse, axon, dendrite
+  - Brain, cortex, hippocampus, glial
+  - Ribosome, mitochondria, oxidative phosphorylation
+  - Cell cycle (E2F, G2M), apoptosis, DNA repair
+  - All SynGO pathways (100% neuronal)
+
+
+OUTPUT DIRECTORIES:
+  CSV data (raw + filtered): /workspaces/Gama_Vivian_DRP1_bulkRNAseq/03_Results/02_Analysis/Plots/GSEA/Cross_database_pooled/csv_data
+  Comprehensive plots: /workspaces/Gama_Vivian_DRP1_bulkRNAseq/03_Results/02_Analysis/Plots/GSEA/Cross_database_pooled/comprehensive
+  Focused plots: /workspaces/Gama_Vivian_DRP1_bulkRNAseq/03_Results/02_Analysis/Plots/GSEA/Cross_database_pooled/focused
+
+
+FILE NAMING CONVENTION:
+  {contrast}_raw_comprehensive.csv - All pathways before filtering
+  {contrast}_filtered_comprehensive.csv - Neuronal-filtered pathways
+  {contrast}_pooled_comprehensive.pdf - Visualization (comprehensive)
+  {contrast}_pooled_focused.pdf - Visualization (focused)
+
+
+KEY PATHWAYS TO HIGHLIGHT:
+  - Ribosome pathways (SynGO: Presynaptic/Postsynaptic Ribosome)
+  - Mitochondrial pathways (Hallmark: OxPhos, KEGG: ETC)
+  - Cell cycle pathways (Hallmark: E2F, G2M checkpoint)
+  - Synaptic pathways (SynGO: Synapse, PSD)
+
+===============================================================================

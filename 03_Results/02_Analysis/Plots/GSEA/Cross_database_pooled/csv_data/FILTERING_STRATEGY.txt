@@ -1,0 +1,74 @@
+===============================================================================
+NEURONAL MATURATION PATHWAY FILTERING STRATEGY
+===============================================================================
+
+Based on inspection of raw CSV files, the following non-neuronal tissue-specific
+pathways should be EXCLUDED from visualizations:
+
+TISSUE-SPECIFIC EXCLUSIONS:
+---------------------------
+1. Pancreas & Endocrine:
+   - HALLMARK_PANCREAS_BETA_CELLS
+   - GOBP_PANCREAS_DEVELOPMENT
+   - REACTOME_REGULATION_OF_GENE_EXPRESSION_IN_BETA_CELLS
+   - Keywords: pancreas, beta_cell, insulin (except insulin signaling)
+
+2. Cardiac & Cardiovascular:
+   - SIG_PIP3_SIGNALING_IN_CARDIAC_MYOCTES
+   - GOBP_CARDIAC_CHAMBER_MORPHOGENESIS
+   - GOBP_CARDIAC_SEPTUM_MORPHOGENESIS
+   - GOBP_CARDIAC_MUSCLE_TISSUE_DEVELOPMENT
+   - GOBP_CARDIAC_NEURAL_CREST (keep - relevant to neural)
+   - Keywords: cardiac, heart, myocardium, cardiomyocyte
+
+3. Kidney & Renal:
+   - GOBP_KIDNEY_EPITHELIUM_DEVELOPMENT
+   - GOBP_KIDNEY_MORPHOGENESIS
+   - Keywords: kidney, renal, nephron
+
+4. Gastrointestinal:
+   - GOBP_INTESTINAL_EPITHELIAL_CELL_DIFFERENTIATION
+   - Keywords: intestin, colon, gut, digestive
+
+5. Respiratory:
+   - GOBP_LUNG_MORPHOGENESIS
+   - GOBP_LUNG_EPITHELIUM_DEVELOPMENT
+   - Keywords: lung, alveolar, bronchial
+
+6. Other Non-Neuronal:
+   - HALLMARK_ADIPOGENESIS (fat/adipose)
+   - HALLMARK_ANDROGEN_RESPONSE (hormonal)
+   - HALLMARK_BILE_ACID_METABOLISM (liver)
+   - HALLMARK_COAGULATION (blood clotting)
+   - HALLMARK_XENOBIOTIC_METABOLISM (drug metabolism)
+   - HALLMARK_HEME_METABOLISM (blood)
+   - HALLMARK_MYOGENESIS (muscle, except neuromuscular)
+   - HALLMARK_UV_RESPONSE (skin)
+
+KEEP (NEURONAL-RELEVANT):
+-------------------------
+1. Neuron-Specific:
+   - Anything with: neuro, neural, neuron, synap, axon, dendrite, brain
+   - SynGO database (all)
+
+2. General Cell Biology (relevant to neurons):
+   - Cell cycle: E2F_TARGETS, G2M_CHECKPOINT
+   - Mitochondria: OXIDATIVE_PHOSPHORYLATION
+   - Protein synthesis: Ribosome, translation
+   - Cell death: APOPTOSIS, P53_PATHWAY
+   - Stress response: HYPOXIA, DNA_REPAIR
+   - Signaling: MYC_TARGETS, TNFA_SIGNALING_VIA_NFKB
+   - Immune (can affect neurons): INTERFERON, INFLAMMATORY_RESPONSE
+
+3. Development (keep if not tissue-specific):
+   - EMT (epithelial-mesenchymal transition)
+   - General developmental signaling
+
+FILTERING APPROACH:
+-------------------
+1. Create exclusion regex patterns for non-neuronal tissues
+2. Create inclusion regex patterns for neuronal/brain terms
+3. For ambiguous pathways, check if they contain neuronal inclusion terms
+4. Apply hierarchical filtering: exclude first, then re-include neuronal hits
+
+===============================================================================
