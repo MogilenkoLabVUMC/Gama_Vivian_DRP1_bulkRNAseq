@@ -4,8 +4,8 @@ services:
     user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
     working_dir: /workspaces/Gama_Vivian_DRP1_bulkRNAseq
     env_file: .env
-    ports:
-      - "8787:8787"  # httpgd graphics server
+    # ports:
+    #   - "8787:8787"  # httpgd graphics server
     volumes:
       - ${WORKSPACE_FOLDER:-.}:/workspaces/Gama_Vivian_DRP1_bulkRNAseq
     stdin_open: true
@@ -25,10 +25,8 @@ services:
     user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
     working_dir: /workspaces/Gama_Vivian_DRP1_bulkRNAseq
     env_file: .env
-    environment:
-      - CONTEXT7_API_KEY=${CONTEXT7_API_KEY}
-    ports:
-      - "8787:8787"  # httpgd graphics server
+    # ports:
+    #   - "8787:8787"  # httpgd graphics server
     volumes:
       - ${WORKSPACE_FOLDER:-.}:/workspaces/Gama_Vivian_DRP1_bulkRNAseq
     stdin_open: true
