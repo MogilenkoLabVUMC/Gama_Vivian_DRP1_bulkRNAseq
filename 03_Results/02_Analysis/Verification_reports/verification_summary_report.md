@@ -1,12 +1,12 @@
 # RNA-seq Analysis Verification Report
 
-**Generated:**  2025-11-20 18:06:34 
+**Generated:**  2025-11-25 03:46:28 
 
 ---
 
 ## 1. Calcium Pathway Enrichment Verification
 
-**Total calcium-related pathway hits:** 92
+**Total calcium-related pathway hits:** 1134
 
 **Significant (FDR < 0.05):** 92
 
@@ -46,13 +46,7 @@ Calcium-related pathways show significant enrichment in the following contexts:
 
 ---
 
-## 2. Gene List Intersection Verification
-
-**SKIPPED**: gene_intersections.rds checkpoint file not available
-
----
-
-## 3. Ribosome Pathway Statistics
+## 2. Ribosome Pathway Statistics
 
 **Total ribosome pathway enrichments:** 18
 
@@ -79,7 +73,7 @@ Calcium-related pathways show significant enrichment in the following contexts:
 
 ---
 
-## 4. Calcium Gene Differential Expression
+## 3. Calcium Gene Differential Expression
 
 **Calcium genes analyzed:** 15
 Genes: NNAT, CACNG3, CACNA1C, CACNA1S, ATP2A1, RYR1, MYLK3, CASR, VDR, STIM1, STIM2, ORAI1, CALB1, CALR, PNPO
@@ -91,24 +85,4 @@ Genes: NNAT, CACNG3, CACNA1C, CACNA1S, ATP2A1, RYR1, MYLK3, CASR, VDR, STIM1, ST
 - **NNAT**: 4 contrasts
 - **PNPO**: 2 contrasts
 
----
 
-## 5. Recommendations for Manuscript
-
-### Calcium Signaling
-- ✅ Can claim pathway-level calcium dysregulation
-- Highlight top enriched pathways
-- Connect to individual calcium gene findings
-
-### Ribosome Pathways (KEY MECHANISTIC FINDING)
-- ✅ **STRONG FINDING**: Ribosome pathway dysregulation
-- Emphasize presynaptic/postsynaptic ribosome findings
-- Link to local translation deficits and synaptic maturation
-- Create compelling visualizations (running sum plots, heatmaps)
-
-### Gene List Consistency
-- ⚠️ Skipped (gene_intersections.rds not available)
-
----
-
-*End of Report*

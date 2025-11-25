@@ -1,0 +1,10 @@
+"Contrast","FDR_0.5","FDR_0.1","FDR_0.05","FDR_0.01"
+"G32A_vs_Ctrl_D35",55,16,16,13
+"G32A_vs_Ctrl_D65",17,14,14,9
+"R403C_vs_Ctrl_D35",1482,11,10,9
+"R403C_vs_Ctrl_D65",13,11,10,8
+"Time_Ctrl",5377,1,0,0
+"Time_G32A",8114,376,68,4
+"Time_R403C",8987,503,124,10
+"Maturation_G32A_specific",0,0,0,0
+"Maturation_R403C_specific",0,0,0,0

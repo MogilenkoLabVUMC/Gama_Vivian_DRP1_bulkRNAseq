@@ -1,0 +1,61 @@
+"Pool","Pathway_Short","Description","Contrast","Mutation","Timepoint","NES","p.adjust","pvalue","setSize"
+"1. Cytoplasmic Ribosome Biogenesis","Ribosome Biogenesis","GOBP_RIBOSOME_BIOGENESIS","G32A_vs_Ctrl_D35","G32A","Early (D35)",-2.60073815874921,3.9471150440839e-19,1.4848081670535e-21,287
+"1. Cytoplasmic Ribosome Biogenesis","Ribosomal Small Subunit Biogenesis","GOBP_RIBOSOMAL_SMALL_SUBUNIT_BIOGENESIS","G32A_vs_Ctrl_D35","G32A","Early (D35)",-2.21944183801749,2.62552574146588e-06,6.25517104549866e-08,98
+"1. Cytoplasmic Ribosome Biogenesis","Ribosomal Large Subunit Biogenesis","GOBP_RIBOSOMAL_LARGE_SUBUNIT_BIOGENESIS","G32A_vs_Ctrl_D35","G32A","Early (D35)",-2.13483511949455,0.000178197323382409,7.22471906712381e-06,62
+"1. Cytoplasmic Ribosome Biogenesis","Ribosome Biogenesis","GOBP_RIBOSOME_BIOGENESIS","Maturation_G32A_specific","G32A","TrajDev (Maturation)",2.25418549877522,5.48319967495414e-12,1.94805422098684e-14,287
+"1. Cytoplasmic Ribosome Biogenesis","Ribosomal Small Subunit Biogenesis","GOBP_RIBOSOMAL_SMALL_SUBUNIT_BIOGENESIS","Maturation_G32A_specific","G32A","TrajDev (Maturation)",1.86245221163935,0.00117536564167255,5.47767059755442e-05,98
+"1. Cytoplasmic Ribosome Biogenesis","Ribosomal Large Subunit Biogenesis","GOBP_RIBOSOMAL_LARGE_SUBUNIT_BIOGENESIS","Maturation_G32A_specific","G32A","TrajDev (Maturation)",1.77213208872416,0.0106624404794917,0.000926974971675765,62
+"1. Cytoplasmic Ribosome Biogenesis","Ribosomal Small Subunit Biogenesis","GOBP_RIBOSOMAL_SMALL_SUBUNIT_BIOGENESIS","G32A_vs_Ctrl_D65","G32A","Late (D65)",-1.39115495671824,0.746837553898563,0.0361451585715318,98
+"1. Cytoplasmic Ribosome Biogenesis","Ribosome Biogenesis","GOBP_RIBOSOME_BIOGENESIS","G32A_vs_Ctrl_D65","G32A","Late (D65)",-1.21574294216703,0.862067374361213,0.0590845146629153,287
+"1. Cytoplasmic Ribosome Biogenesis","Ribosomal Large Subunit Biogenesis","GOBP_RIBOSOMAL_LARGE_SUBUNIT_BIOGENESIS","G32A_vs_Ctrl_D65","G32A","Late (D65)",-1.30418865975961,0.880686108893798,0.0945434900054025,62
+"1. Cytoplasmic Ribosome Biogenesis","Ribosome Biogenesis","GOBP_RIBOSOME_BIOGENESIS","R403C_vs_Ctrl_D35","R403C","Early (D35)",-1.72468742178496,0.000193250856973091,9.89476697145396e-06,287
+"1. Cytoplasmic Ribosome Biogenesis","Ribosomal Large Subunit Biogenesis","GOBP_RIBOSOMAL_LARGE_SUBUNIT_BIOGENESIS","R403C_vs_Ctrl_D35","R403C","Early (D35)",-1.5170288037873,0.0660524551792991,0.0185475991066443,62
+"1. Cytoplasmic Ribosome Biogenesis","Ribosomal Small Subunit Biogenesis","GOBP_RIBOSOMAL_SMALL_SUBUNIT_BIOGENESIS","R403C_vs_Ctrl_D35","R403C","Early (D35)",-1.43213883975142,0.0804525990042542,0.0242612123866968,98
+"1. Cytoplasmic Ribosome Biogenesis","Ribosome Biogenesis","GOBP_RIBOSOME_BIOGENESIS","Maturation_R403C_specific","R403C","TrajDev (Maturation)",1.593128712781,0.00374448720913409,0.000216765508240364,287
+"1. Cytoplasmic Ribosome Biogenesis","Ribosomal Small Subunit Biogenesis","GOBP_RIBOSOMAL_SMALL_SUBUNIT_BIOGENESIS","Maturation_R403C_specific","R403C","TrajDev (Maturation)",1.22833136737866,0.316147546029852,0.123376409309686,98
+"1. Cytoplasmic Ribosome Biogenesis","Ribosomal Large Subunit Biogenesis","GOBP_RIBOSOMAL_LARGE_SUBUNIT_BIOGENESIS","Maturation_R403C_specific","R403C","TrajDev (Maturation)",1.17707333505138,0.431949431284528,0.199319612178942,62
+"1. Cytoplasmic Ribosome Biogenesis","Ribosomal Small Subunit Biogenesis","GOBP_RIBOSOMAL_SMALL_SUBUNIT_BIOGENESIS","R403C_vs_Ctrl_D65","R403C","Late (D65)",-0.661923911907729,1,0.990553968186277,98
+"1. Cytoplasmic Ribosome Biogenesis","Ribosomal Large Subunit Biogenesis","GOBP_RIBOSOMAL_LARGE_SUBUNIT_BIOGENESIS","R403C_vs_Ctrl_D65","R403C","Late (D65)",-0.656127714509039,1,0.977923070391441,62
+"1. Cytoplasmic Ribosome Biogenesis","Ribosome Biogenesis","GOBP_RIBOSOME_BIOGENESIS","R403C_vs_Ctrl_D65","R403C","Late (D65)",0.608308011980076,1,0.999981611224509,287
+"2. Synaptic Ribosomes (SynGO)","Postsynaptic Ribosome","postsynaptic ribosome","G32A_vs_Ctrl_D35","G32A","Early (D35)",2.45817534242279,3.40438886521169e-07,1.06387152037865e-08,65
+"2. Synaptic Ribosomes (SynGO)","Presynaptic Ribosome","presynaptic ribosome","G32A_vs_Ctrl_D35","G32A","Early (D35)",2.33010062177469,8.15976316300135e-06,5.09985197687584e-07,51
+"2. Synaptic Ribosomes (SynGO)","Postsynaptic Ribosome","postsynaptic ribosome","Maturation_G32A_specific","G32A","TrajDev (Maturation)",-3.01930378165091,1.88281501185656e-15,5.88379691205174e-17,65
+"2. Synaptic Ribosomes (SynGO)","Presynaptic Ribosome","presynaptic ribosome","Maturation_G32A_specific","G32A","TrajDev (Maturation)",-2.90209927613196,3.15254028422659e-12,1.97033767764162e-13,51
+"2. Synaptic Ribosomes (SynGO)","Presynaptic Ribosome","presynaptic ribosome","G32A_vs_Ctrl_D65","G32A","Late (D65)",-2.49238759914907,7.15296944216768e-07,4.4706059013548e-08,51
+"2. Synaptic Ribosomes (SynGO)","Postsynaptic Ribosome","postsynaptic ribosome","G32A_vs_Ctrl_D65","G32A","Late (D65)",-2.48502109703243,7.15296944216768e-07,3.05150903227387e-08,65
+"2. Synaptic Ribosomes (SynGO)","Postsynaptic Ribosome","postsynaptic ribosome","R403C_vs_Ctrl_D35","R403C","Early (D35)",2.29162769302504,3.98412474852232e-06,2.49007796782645e-07,65
+"2. Synaptic Ribosomes (SynGO)","Presynaptic Ribosome","presynaptic ribosome","R403C_vs_Ctrl_D35","R403C","Early (D35)",2.23316446947385,1.95932092651441e-05,3.06143894767877e-06,51
+"2. Synaptic Ribosomes (SynGO)","Postsynaptic Ribosome","postsynaptic ribosome","Maturation_R403C_specific","R403C","TrajDev (Maturation)",-2.88712095992719,2.50925899685276e-12,7.84143436516486e-14,65
+"2. Synaptic Ribosomes (SynGO)","Presynaptic Ribosome","presynaptic ribosome","Maturation_R403C_specific","R403C","TrajDev (Maturation)",-2.71252353741633,3.63000044373201e-10,2.26875027733251e-11,51
+"2. Synaptic Ribosomes (SynGO)","Postsynaptic Ribosome","postsynaptic ribosome","R403C_vs_Ctrl_D65","R403C","Late (D65)",-2.58145672878091,9.35750721546656e-09,2.9242210048333e-10,65
+"2. Synaptic Ribosomes (SynGO)","Presynaptic Ribosome","presynaptic ribosome","R403C_vs_Ctrl_D65","R403C","Late (D65)",-2.47747347246333,1.06409290964336e-06,6.65058068527102e-08,51
+"3. Mitochondrial Ribosomes (MitoCarta)","Mitochondrial Central Dogma","Mitochondrial_central_dogma","G32A_vs_Ctrl_D35","G32A","Early (D35)",-2.38426797755104,1.82931344702678e-12,2.54071312087053e-14,216
+"3. Mitochondrial Ribosomes (MitoCarta)","Translation","Translation","G32A_vs_Ctrl_D35","G32A","Early (D35)",-2.1968750720465,4.99048749620899e-08,1.38624652672472e-09,145
+"3. Mitochondrial Ribosomes (MitoCarta)","Mitochondrial Ribosome","Mitochondrial_ribosome","G32A_vs_Ctrl_D35","G32A","Early (D35)",-2.1835650924473,1.55483500048331e-05,8.02382802275467e-07,77
+"3. Mitochondrial Ribosomes (MitoCarta)","Mitochondrial Ribosome Assembly","Mitochondrial_ribosome_assembly","G32A_vs_Ctrl_D35","G32A","Early (D35)",-1.98750770735091,0.0048346014623487,0.000537177940260967,24
+"3. Mitochondrial Ribosomes (MitoCarta)","Translation Factors","Translation_factors","G32A_vs_Ctrl_D35","G32A","Early (D35)",-0.85119961932039,0.785157972079353,0.654298310066128,15
+"3. Mitochondrial Ribosomes (MitoCarta)","Mitochondrial Central Dogma","Mitochondrial_central_dogma","Maturation_G32A_specific","G32A","TrajDev (Maturation)",2.40551487842377,2.13630593821193e-13,2.9670915808499e-15,216
+"3. Mitochondrial Ribosomes (MitoCarta)","Translation","Translation","Maturation_G32A_specific","G32A","TrajDev (Maturation)",2.1845953001715,7.36415058509481e-08,2.04559738474856e-09,145
+"3. Mitochondrial Ribosomes (MitoCarta)","Mitochondrial Ribosome","Mitochondrial_ribosome","Maturation_G32A_specific","G32A","TrajDev (Maturation)",1.89322200796298,0.00079793418384556,5.54120961003861e-05,77
+"3. Mitochondrial Ribosomes (MitoCarta)","Mitochondrial Ribosome Assembly","Mitochondrial_ribosome_assembly","Maturation_G32A_specific","G32A","TrajDev (Maturation)",2.11219120748669,0.00114501173916986,9.54176449308215e-05,24
+"3. Mitochondrial Ribosomes (MitoCarta)","Translation Factors","Translation_factors","Maturation_G32A_specific","G32A","TrajDev (Maturation)",1.3308000296798,0.349308133648329,0.133003118693818,15
+"3. Mitochondrial Ribosomes (MitoCarta)","Mitochondrial Ribosome","Mitochondrial_ribosome","G32A_vs_Ctrl_D65","G32A","Late (D65)",-1.43145056569805,0.601652892561984,0.033627474362032,77
+"3. Mitochondrial Ribosomes (MitoCarta)","Translation Factors","Translation_factors","G32A_vs_Ctrl_D65","G32A","Late (D65)",1.23115507801291,0.808685885436166,0.206543593492963,15
+"3. Mitochondrial Ribosomes (MitoCarta)","Translation","Translation","G32A_vs_Ctrl_D65","G32A","Late (D65)",-0.857282986637508,0.999289646599183,0.82328802256989,145
+"3. Mitochondrial Ribosomes (MitoCarta)","Mitochondrial Ribosome Assembly","Mitochondrial_ribosome_assembly","G32A_vs_Ctrl_D65","G32A","Late (D65)",0.84676322397694,0.999289646599183,0.694648290674781,24
+"3. Mitochondrial Ribosomes (MitoCarta)","Mitochondrial Central Dogma","Mitochondrial_central_dogma","G32A_vs_Ctrl_D65","G32A","Late (D65)",0.714285609443394,0.999289646599183,0.992754789888907,216
+"3. Mitochondrial Ribosomes (MitoCarta)","Mitochondrial Central Dogma","Mitochondrial_central_dogma","R403C_vs_Ctrl_D35","R403C","Early (D35)",-1.80172631266755,0.00051165818566462,7.10636368978639e-06,216
+"3. Mitochondrial Ribosomes (MitoCarta)","Translation","Translation","R403C_vs_Ctrl_D35","R403C","Early (D35)",-1.64804471763229,0.0128561232898511,0.000892786339572991,145
+"3. Mitochondrial Ribosomes (MitoCarta)","Mitochondrial Ribosome Assembly","Mitochondrial_ribosome_assembly","R403C_vs_Ctrl_D35","R403C","Early (D35)",-1.89122509468268,0.033944796845534,0.00369208697722104,24
+"3. Mitochondrial Ribosomes (MitoCarta)","Mitochondrial Ribosome","Mitochondrial_ribosome","R403C_vs_Ctrl_D35","R403C","Early (D35)",-1.63180235640333,0.033944796845534,0.00377164409394823,77
+"3. Mitochondrial Ribosomes (MitoCarta)","Translation Factors","Translation_factors","R403C_vs_Ctrl_D35","R403C","Early (D35)",0.726055602837143,0.945757772020725,0.840673575129534,15
+"3. Mitochondrial Ribosomes (MitoCarta)","Mitochondrial Central Dogma","Mitochondrial_central_dogma","Maturation_R403C_specific","R403C","TrajDev (Maturation)",2.02079237320723,7.99580556811653e-07,1.1105285511273e-08,216
+"3. Mitochondrial Ribosomes (MitoCarta)","Translation","Translation","Maturation_R403C_specific","R403C","TrajDev (Maturation)",1.86947434254709,0.000507233105524749,1.40898084867986e-05,145
+"3. Mitochondrial Ribosomes (MitoCarta)","Mitochondrial Ribosome","Mitochondrial_ribosome","Maturation_R403C_specific","R403C","TrajDev (Maturation)",1.75016515808853,0.0166862707768002,0.000927015043155565,77
+"3. Mitochondrial Ribosomes (MitoCarta)","Mitochondrial Ribosome Assembly","Mitochondrial_ribosome_assembly","Maturation_R403C_specific","R403C","TrajDev (Maturation)",1.8635574676453,0.0266900790166813,0.00281603219870877,24
+"3. Mitochondrial Ribosomes (MitoCarta)","Translation Factors","Translation_factors","Maturation_R403C_specific","R403C","TrajDev (Maturation)",0.610751871241932,0.993521000893655,0.939732551749405,15
+"3. Mitochondrial Ribosomes (MitoCarta)","Mitochondrial Central Dogma","Mitochondrial_central_dogma","R403C_vs_Ctrl_D65","R403C","Late (D65)",1.56009803638643,0.00871969015181742,0.000487758194977237,216
+"3. Mitochondrial Ribosomes (MitoCarta)","Translation","Translation","R403C_vs_Ctrl_D65","R403C","Late (D65)",1.37867077326738,0.147878787878788,0.0225925925925926,145
+"3. Mitochondrial Ribosomes (MitoCarta)","Mitochondrial Ribosome Assembly","Mitochondrial_ribosome_assembly","R403C_vs_Ctrl_D65","R403C","Late (D65)",1.2872672434351,0.38579836719195,0.140530303030303,24
+"3. Mitochondrial Ribosomes (MitoCarta)","Mitochondrial Ribosome","Mitochondrial_ribosome","R403C_vs_Ctrl_D65","R403C","Late (D65)",1.04753992358279,0.674847283249384,0.367408525084874,77
+"3. Mitochondrial Ribosomes (MitoCarta)","Translation Factors","Translation_factors","R403C_vs_Ctrl_D65","R403C","Late (D65)",0.935318731426112,0.79249617151608,0.550344563552833,15

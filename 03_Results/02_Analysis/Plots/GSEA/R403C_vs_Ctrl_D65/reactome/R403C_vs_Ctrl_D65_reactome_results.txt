@@ -1,11 +1,11 @@
 GSEA Results Log
 ================
 
-Analysis date: 2025-11-19 21:01:09 
+Analysis date: 2025-11-24 22:02:52 
 
 Summary Statistics:
 -----------------
-Total pathways analyzed: 53 
+Total pathways analyzed: 1295 
 Significant upregulated pathways (padj < 0.05 ): 18 
 Significant downregulated pathways (padj < 0.05 ): 35 
 Total significant pathways: 53 
