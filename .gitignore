@@ -1,6 +1,13 @@
 # Dev container environment
 .devcontainer/.env
 .devcontainer/devcontaine.back.json
+.claude/*
+1stRun.backup/*
+.gitignore
+CLAUDE.md
+AGENT.md
+NEXT_SESSION*
+SESSION_SUMMARY*
 
 
 # R specific
