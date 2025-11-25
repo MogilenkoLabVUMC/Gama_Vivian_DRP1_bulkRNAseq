@@ -145,10 +145,74 @@ ha_compartment <- rowAnnotation(
 )
 
 # Color scheme for logFC
-col_fun <- colorRamp2(c(-0.6, 0, 0.6), c("#0571b0", "white", "#ca0020"))
+# Use consistent Blue-White-Orange palette as in publication figures
+col_fun <- colorRamp2(c(-0.6, 0, 0.6), c("#2166AC", "#F7F7F7", "#B35806"))
+
+###############################################################################
+##  PANEL C: Expression Heatmap by Compartment                               ##
+###############################################################################
+
+message("📊 Creating Panel C: Expression heatmap by compartment...")
+
+# Define trajectory contrasts as in publication figures
+contrasts_of_interest <- c(
+  "G32A_vs_Ctrl_D35",          # Early G32A
+  "Maturation_G32A_specific",  # TrajDev G32A
+  "G32A_vs_Ctrl_D65",          # Late G32A
+  "R403C_vs_Ctrl_D35",         # Early R403C
+  "Maturation_R403C_specific", # TrajDev R403C
+  "R403C_vs_Ctrl_D65"          # Late R403C
+)
+
+# Extract logFC matrix
+logfc_matrix <- sapply(contrasts_of_interest, function(contrast) {
+  coef_idx <- which(colnames(fit$coefficients) == contrast)
+  logfc <- fit$coefficients[, coef_idx]
+  names(logfc) <- rownames(fit$coefficients)
+  return(logfc)
+})
+
+# Annotate genes by compartment
+all_ribosome_genes_sorted <- sort(all_ribosome_genes)
+compartment_annotation <- sapply(all_ribosome_genes_sorted, function(g) {
+  if (g %in% shared_genes) {
+    return("Both")
+  } else if (g %in% postsyn_only) {
+    return("Postsynaptic only")
+  } else {
+    return("Unknown")
+  }
+})
+
+# Filter to genes present in data
+genes_present <- all_ribosome_genes_sorted[all_ribosome_genes_sorted %in% rownames(logfc_matrix)]
+logfc_subset <- logfc_matrix[genes_present, ]
+compartment_subset <- compartment_annotation[genes_present]
+
+# Convert to factor with explicit levels to control display order
+compartment_subset <- factor(compartment_subset,
+                             levels = c("Postsynaptic only", "Both"))
+
+# Rename columns to simple timepoints
+colnames(logfc_subset) <- rep(c("Early", "TrajDev", "Late"), 2)
+
+# Create column split vector
+column_split <- factor(rep(c("G32A", "R403C"), each = 3), levels = c("G32A", "R403C"))
+
+# Create annotation
+ha_compartment <- rowAnnotation(
+  Compartment = compartment_subset,
+  col = list(Compartment = c("Both" = "#999999",
+                              "Postsynaptic only" = "#56B4E9")),
+  show_annotation_name = TRUE,
+  annotation_name_side = "top",
+  annotation_legend_param = list(
+    Compartment = list(title = "SynGO Annotation")
+  )
+)
 
 # Create heatmap
-pdf(file.path(out_dir, "Panel_C_Expression_Heatmap.pdf"), width = 10, height = 14)
+pdf(file.path(out_dir, "Panel_C_Expression_Heatmap.pdf"), width = 6, height = 14)
 ht <- Heatmap(
   logfc_subset,
   name = "logFC",
@@ -160,18 +224,19 @@ ht <- Heatmap(
   cluster_rows = TRUE,  # Enable clustering within each compartment
   cluster_row_slices = FALSE,  # Prevent reordering of compartment slices
   show_row_dend = TRUE,
-  row_dend_width = unit(15, "mm"),
+  row_dend_width = unit(10, "mm"),
   row_split = compartment_subset,
   row_title = c("Postsynaptic Only", "Both Compartments"),
-  row_title_gp = gpar(fontface = "bold", fontsize = 11),
-  row_gap = unit(3, "mm"),
+  row_title_gp = gpar(fontface = "bold", fontsize = 10),
+  row_gap = unit(2, "mm"),
 
   # Column settings
   cluster_columns = FALSE,
   show_column_dend = FALSE,
-  column_names_gp = gpar(fontsize = 11, fontface = "bold"),
-  column_title = "Synaptic Ribosome Expression: Normal vs. Disrupted Maturation (D35→D65)",
-  column_title_gp = gpar(fontface = "bold", fontsize = 13),
+  column_names_gp = gpar(fontsize = 9),
+  column_split = column_split,
+  column_title_gp = gpar(fontface = "bold", fontsize = 11),
+  column_gap = unit(2, "mm"),
 
   # Annotations
   right_annotation = ha_compartment,
@@ -182,7 +247,7 @@ ht <- Heatmap(
 
   # Legend
   heatmap_legend_param = list(
-    title = "logFC\n(Maturation)",
+    title = "logFC",
     at = c(-0.6, -0.3, 0, 0.3, 0.6),
     labels = c("-0.6", "-0.3", "0", "0.3", "0.6"),
     legend_height = unit(4, "cm"),
@@ -190,7 +255,7 @@ ht <- Heatmap(
   )
 )
 
-draw(ht, heatmap_legend_side = "right")
+draw(ht, heatmap_legend_side = "right", column_title = "Synaptic Ribosome Expression Trajectories")
 dev.off()
 
 message("✓ Panel C complete\n")

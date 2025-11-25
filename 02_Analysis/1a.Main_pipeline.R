@@ -24,17 +24,42 @@ config <- list(
   p_cutoff      = 0.05,
   fc_cutoff     = 2,
   calcium_genes = c(
-      "NNAT","CACNG3","CACNA1C","CACNA1S","ATP2A1", # NNAT for Neuronatin gene
-      "RYR1","MYLK3","CASR","VDR","STIM1","STIM2",
-      "ORAI1","CALB1","CALR","PNPO"),  # PNPO added per collaborator request
+      "NNAT","CACNG3","CACNA1S","ATP2A1",  # NNAT for Neuronatin gene
+      "RYR1","MYLK3","VDR","STIM1","STIM2",
+      "ORAI1_1","CALB1","CALR","PNPO"),  # ORAI1_1 (alternative symbol), PNPO added per collaborator request
+  # Note: CACNA1C, CASR, ORAI1 not present in dataset. ORAI1_1 is the alternative symbol for ORAI1.
   ## SynGO data (relative to repo root)
   syngo_dir     = "00_Data/SynGO_bulk_20231201",
-  syngo_ns      = "CC"                       # GO cellular-component ontology
+  syngo_ns      = "CC",                       # GO cellular-component ontology
+  ## MitoCarta data (relative to repo root)
+  mitocarta_file = "00_Data/MitoCarta_3.0/MitoPathways3.0.gmx",
+  ## checkpoint caching
+  force_recompute = FALSE   # Set TRUE to ignore cached checkpoints and recompute all
 )
 
 ## create checkpoint directory for saving expensive computations -------
 checkpoint_dir <- here::here(config$out_root, "checkpoints")
 dir.create(checkpoint_dir, recursive = TRUE, showWarnings = FALSE)
+
+## checkpoint caching helper -------------------------------------------
+#' Load cached result or compute if needed
+#' @param checkpoint_file Path to checkpoint RDS file
+#' @param compute_fn Function that computes the result
+#' @param force_recompute Ignore cache and recompute
+#' @param description Human-readable description for messages
+load_or_compute <- function(checkpoint_file, compute_fn,
+                            force_recompute = FALSE,
+                            description = "computation") {
+  if (!force_recompute && file.exists(checkpoint_file)) {
+    message("📦 Loading cached ", description, " from ", basename(checkpoint_file))
+    return(readRDS(checkpoint_file))
+  }
+  message("🔬 Computing ", description, "...")
+  result <- compute_fn()
+  message("💾 Saving ", description, " to ", basename(checkpoint_file))
+  saveRDS(result, checkpoint_file)
+  return(result)
+}
 
 # -------------------------------------------------------------------- #
 # 1.  Packages & helper sourcing                                       #
@@ -67,9 +92,11 @@ source_if_present <- function(...) {
 gsea_helpers <- c(
   "scripts/custom_minimal_theme.R",
   "scripts/GSEA/GSEA_plotting/gsea_plotting_utils.R",
+  "scripts/GSEA/GSEA_plotting/format_pathway_names.R",
   "scripts/GSEA/GSEA_plotting/gsea_dotplot.R",
   "scripts/GSEA/GSEA_plotting/gsea_dotplot_facet.R",
-  "scripts/GSEA/GSEA_plotting/gsea_barplot.R",
+  "scripts/GSEA/GSE
+  A_plotting/gsea_barplot.R",
   "scripts/GSEA/GSEA_plotting/gsea_running_sum_plot.R",
   "scripts/GSEA/GSEA_plotting/gsea_heatmap.R",
   "scripts/GSEA/GSEA_processing/run_gsea.R",
@@ -81,6 +108,7 @@ for (h in gsea_helpers){
   source_if_present(config$helper_root, h)
 }
 
+
 ## other single helpers
 source_if_present("01_Scripts/R_scripts/read_count_matrix.R")
 source_if_present(config$helper_root, "scripts/DE/plot_standard_volcano.R")
@@ -88,14 +116,25 @@ source_if_present(config$helper_root, "scripts/DE/create_fc_b_plot.R")
 source_if_present(config$helper_root, "scripts/DE/create_MD_plot.R")
 source_if_present(config$helper_root, "scripts/DE/plotPCA.R")
 source_if_present("01_Scripts/R_scripts/generate_vertical_volcanos.R")
+
+## GSEA-specific helpers (SynGO & MitoCarta)
+source_if_present("01_Scripts/R_scripts/syngo_running_sum_plot.R")  # Specialized running sum plot
 source_if_present("01_Scripts/R_scripts/run_syngo_gsea.R")
+source_if_present("01_Scripts/R_scripts/parse_mitocarta_gmx.R")
+source_if_present("01_Scripts/R_scripts/run_mitocarta_gsea.R")
 source_if_present(config$helper_root, "scripts/GSEA/GSEA_plotting/plot_all_gsea_results.R")
 
+## Load shared utilities (DRY helpers) - now in toolkit for reusability
+source_if_present(config$helper_root, "scripts/utils_plotting.R")
 
 # -------------------------------------------------------------------- #
 # 2.  Read & pre-process data                                          #
 # -------------------------------------------------------------------- #
-DGE <- process_rnaseq_data(config$counts_file, config$metadata_file, annotate = FALSE)
+DGE <- process_rnaseq_data(
+  here::here(config$counts_file),
+  here::here(config$metadata_file),
+  annotate = FALSE
+)
 
 ## design / contrasts --------------------------------------------------
 DGE$samples$group <- with(DGE$samples,
@@ -113,73 +152,75 @@ contrasts <- makeContrasts(
   R403C_vs_Ctrl_D65  = D65_R403C - D65_Control,
 
     # 2. Maturation effects within each genotype
-  # Question: How does maturation affect each genotype?
+  # Question: How does maturation affect each genotype?I
   ## maturation
   Time_Ctrl          = D65_Control - D35_Control,
-  Time_G32A          = D65_G32A   - D35_G32A,
-  Time_R403C         = D65_R403C  - D35_R403C,
+  Time_G32A          = D65_G32A - D35_G32A,
+  Time_R403C         = D65_R403C - D35_R403C,
 
     # 3. Interaction effects (difference-in-difference)
   # Question: Do the mutations alter the normal maturation trajectory?
   ## interaction
-  Maturation_G32A_specific = (D65_G32A  - D35_G32A)  - (D65_Control - D35_Control),
+  Maturation_G32A_specific = (D65_G32A - D35_G32A)  - (D65_Control - D35_Control),
   Maturation_R403C_specific = (D65_R403C - D35_R403C) - (D65_Control - D35_Control),
   levels = design)
 
 # -------------------------------------------------------------------- #
 # 3.  DEG modelling (voomLmFit preferred)                              #
 # -------------------------------------------------------------------- #
-## keep.EList=TRUE ➜ the returned object contains $EList with log-CPM + weights
+## Use checkpoint caching to avoid re-running expensive voomLmFit + limma
 
-fit <- edgeR::voomLmFit(
-         DGE,
-         design,
-         sample.weights = FALSE,   # or TRUE if you want quality weights
-         keep.EList     = TRUE)
+model_objs <- load_or_compute(
+  checkpoint_file = file.path(checkpoint_dir, "model_objects.rds"),
+  force_recompute = config$force_recompute,
+  description = "voomLmFit + limma differential expression model",
+  compute_fn = function() {
+    ## keep.EList=TRUE ➜ the returned object contains $EList with log-CPM + weights
+    fit <- edgeR::voomLmFit(
+             DGE,
+             design,
+             sample.weights = FALSE,   # turn off
+             keep.EList     = TRUE)
 
-## unpack the voom log-CPM for QC plots
-v <- fit$EList                    # same structure as `voom()` output
+    ## unpack the voom log-CPM for QC plots
+    v <- fit$EList                    # same structure as `voom()` output
 
-## add contrasts & empirical Bayes
-fit <- contrasts.fit(fit, contrasts) |>
-       eBayes(robust = TRUE)
+    ## add contrasts & empirical Bayes
+    fit <- contrasts.fit(fit, contrasts) |>
+           eBayes(robust = TRUE)
 
-de_results <- decideTests(fit, p.value = config$p_cutoff)
+    de_results <- decideTests(fit, p.value = config$p_cutoff)
+
+    ## return all objects as a list
+    list(fit = fit, v = v, de_results = de_results,
+         DGE = DGE, contrasts = contrasts)
+  }
+)
+
+## unpack loaded/computed objects
+fit        <- model_objs$fit
+v          <- model_objs$v
+de_results <- model_objs$de_results
+DGE        <- model_objs$DGE
+contrasts  <- model_objs$contrasts
 
 # ------------------------------------------------------------
-# CHECKPOINT: Save model objects (avoid re-running voom/limma)
+# Process all contrasts ONCE (DRY principle - eliminates duplicate topTable calls)
 # ------------------------------------------------------------
-message("💾 Saving model checkpoints...")
-saveRDS(fit,        file.path(checkpoint_dir, "fit_object.rds"))
-saveRDS(de_results, file.path(checkpoint_dir, "de_results.rds"))
-saveRDS(v,          file.path(checkpoint_dir, "voom_object.rds"))
-saveRDS(DGE,        file.path(checkpoint_dir, "DGE_object.rds"))
-saveRDS(contrasts,  file.path(checkpoint_dir, "contrasts_matrix.rds"))
-message("✓ Model checkpoints saved")
+message("\n🔬 Processing all contrasts...")
+contrast_tables <- process_all_contrasts(fit, contrasts, number = Inf, sort_by = "t")
 
 # ------------------------------------------------------------
-# save DEGs lists
+# Save DEG results to CSV
 # ------------------------------------------------------------
 deg_dir <- here::here(config$out_root, "DE_results")
-dir.create(deg_dir, recursive = TRUE, showWarnings = FALSE)
+save_contrast_csvs(contrast_tables, deg_dir, suffix = "_DE_results.csv")
 
 # ------------------------------------------------------------
-# 2.  Loop over every contrast in your 'contrasts' matrix
+# CHECKPOINT: Save contrast_tables for downstream modules
 # ------------------------------------------------------------
-for (co in colnames(contrasts)) {
-
-  ## limma::topTable – all rows, sorted by t
-  tt <- limma::topTable(fit,
-                        coef      = co,
-                        number    = Inf,     # keep everything
-                        sort.by   = "t")     # descending t-statistic
-
-  ## write with gene IDs as the first column
-  fname <- file.path(deg_dir, paste0(co, "_DE_results.csv"))
-  write.csv(tt, file = fname, row.names = TRUE)
-
-  message("saved: ", fname)
-}
+saveRDS(contrast_tables, file.path(checkpoint_dir, "contrast_tables.rds"))
+message("💾 Saved contrast_tables checkpoint for downstream analysis")
 
 # -------------------------------------------------------------------- #
 # 4.  QC: sample correlation heat-map & MDS                            #
@@ -235,139 +276,114 @@ saveRDS(list(ordered_samples = ordered_samples,
 # -------------------------------------------------------------------- #
 # 5.  Volcanoes & DEG numbers                                          #
 # -------------------------------------------------------------------- #
-# P-value volcanoes
-deg_dir      <- here::here(config$out_root, "DE_results")
-volcano_dir  <- here::here(config$out_root, "Plots/Volcano/p")
-dir.create(deg_dir,     recursive = TRUE, showWarnings = FALSE)
-dir.create(volcano_dir, recursive = TRUE, showWarnings = FALSE)
+# 5.  Volcano plots (horizontal standard - p-value and FDR modes)     #
+# -------------------------------------------------------------------- #
+# NOTE: Using pre-computed contrast_tables from earlier (DRY principle)
 
-## helper to make + save volcanoes -------------------------------------
-make_all_volcanoes <- function(res_table, name){
-  pdf(file.path(volcano_dir, paste0(name,"_standard.pdf")), 8, 7)
-  print(create_standard_volcano(
-          res_table, 
-          p_cutoff = config$p_cutoff, 
-          fc_cutoff = config$fc_cutoff,
-          decision_by = "p",
-          label_method = "top", 
-          highlight_gene = config$calcium_genes,
-          x_breaks = 2,
-          title = name))
-  dev.off()
+message("\n🌋 Generating volcano plots...")
+
+## Helper function to generate volcano set (eliminates code duplication)
+generate_volcano_set <- function(mode = c("p", "fdr")) {
+  mode <- match.arg(mode)
+
+  volcano_dir <- here::here(config$out_root, "Plots/Volcano", mode)
+  ensure_dir(volcano_dir)
+
+  # Mode-specific parameters
+  params <- list(
+    p = list(
+      p_cutoff = config$p_cutoff,
+      decision_by = "p",
+      label_method = "top",
+      title_suffix = sprintf("(Threshold: p ≤ %.2f)", config$p_cutoff),
+      subtitle = "Highlighting by unadjusted p-value"
+    ),
+    fdr = list(
+      p_cutoff = 0.1,
+      decision_by = "fdr",
+      label_method = "top",
+      title_suffix = "(Threshold: FDR ≤ 0.1)",
+      subtitle = "Highlighting by FDR (adj.P.Val), displayed on p-value scale for resolution"
+    )
+  )[[mode]]
+
+  message("  Mode: ", toupper(mode))
+
+  for (co in names(contrast_tables)) {
+    plot <- create_standard_volcano(
+      contrast_tables[[co]],
+      p_cutoff = params$p_cutoff,
+      fc_cutoff = config$fc_cutoff,
+      decision_by = params$decision_by,
+      label_method = params$label_method,
+      highlight_gene = config$calcium_genes,
+      x_breaks = 2,
+      title = paste(co, params$title_suffix),
+      subtitle = params$subtitle
+    )
+
+    save_plot(plot,
+              file.path(volcano_dir, paste0(co, "_standard.pdf")),
+              width = 8, height = 7)
+  }
+
+  message("  ✓ Saved ", length(contrast_tables), " ", mode, " volcano plots")
 }
 
-for (co in colnames(contrasts)){
-  tbl <- topTable(fit, coef = co, number = Inf)
-  write.csv(tbl, file = file.path(deg_dir, paste0(co,"_results.csv")))
-  make_all_volcanoes(tbl, co)
-}
+# Generate both p-value and FDR volcano sets
+generate_volcano_set("p")
+generate_volcano_set("fdr")
 
-# FDR-value volcanos
-deg_dir      <- here::here(config$out_root, "DE_results")
-volcano_dir  <- here::here(config$out_root, "Plots/Volcano/fdr")
-dir.create(deg_dir,     recursive = TRUE, showWarnings = FALSE)
-dir.create(volcano_dir, recursive = TRUE, showWarnings = FALSE)
-
-## helper to make + save volcanoes -------------------------------------
-make_all_volcanoes <- function(res_table, name){
-  pdf(file.path(volcano_dir, paste0(name,"_standard.pdf")), 8, 7)
-  print(create_standard_volcano(
-          res_table, 
-          p_cutoff = 0.1, 
-          fc_cutoff = config$fc_cutoff,
-          decision_by = "fdr",
-          label_method = "sig", 
-          highlight_gene = config$calcium_genes,
-          x_breaks = 2,
-          title = name))
-  dev.off()
-}
-
-for (co in colnames(contrasts)){
-  tbl <- topTable(fit, coef = co, number = Inf)
-  write.csv(tbl, file = file.path(deg_dir, paste0(co,"_results.csv")))
-  make_all_volcanoes(tbl, co)
-}
-
-## Vertical volcanoes -------------------------------------
-volcano_dir_vert <- here::here(config$out_root, "Plots/Volcano")
-dir.create(volcano_dir_vert, recursive = TRUE, showWarnings = FALSE)
-
-# Create a list to store all contrast tables
-contrast_tables <- list()
-for (co in colnames(contrasts)) {
-  contrast_tables[[co]] <- topTable(fit, coef = co, number = Inf)
-}
-
-# Generate all the vertical volcano plot combinations
-# This will create both versions - with and without calcium gene highlighting
+## Vertical volcanoes (uses pre-computed contrast_tables)
+message("\n🌋 Generating vertical volcano plots...")
 generate_vertical_volcano_sets(contrast_tables, config, highlight_calcium = TRUE)
+message("✓ Vertical volcano plots complete")
 
-## ---- MD plot -----------------------------------------------------------
-deg_dir      <- here::here(config$out_root, "DE_results")
-volcano_dir  <- here::here(config$out_root, "Plots/Volcano/MD")
-dir.create(deg_dir,     recursive = TRUE, showWarnings = FALSE)
-dir.create(volcano_dir, recursive = TRUE, showWarnings = FALSE)
+## ---- MD plots (uses pre-computed contrast_tables) ---------------------
+message("\n📊 Generating MD plots...")
+md_dir <- here::here(config$out_root, "Plots/Volcano/MD")
+ensure_dir(md_dir)
 
-# Enhanced MD plot function
-make_md_plot <- function(fit, coef, name, status = NULL, highlight_genes = NULL) {
-  pdf(file.path(volcano_dir, paste0(name, "_MDplot.pdf")), 7, 6)
-  
-  # Get the DE results once
-  tt <- limma::topTable(fit, coef = coef, number = Inf, sort.by = "none")
-  
-  # Create the plot with our new function
-  gg <- create_MD_plot(
+for (co in names(contrast_tables)) {
+  plot <- create_MD_plot(
     fit = fit,
-    coef = coef,
-    de_results = tt,
+    coef = co,
+    de_results = contrast_tables[[co]],
     fc_cutoff = 1,
     fdr_cutoff = 0.05,
     top_n = 5,
-    highlight_gene = highlight_genes,
+    highlight_gene = config$calcium_genes,
     label_method = "top",
-    title = paste("MD plot:", name),
+    title = paste("MD plot:", co),
     show_grid = FALSE
   )
-  
-  print(gg)
-  dev.off()
+
+  save_plot(plot, file.path(md_dir, paste0(co, "_MDplot.pdf")),
+            width = 7, height = 6)
 }
+message("✓ MD plots complete")
 
-# Use the enhanced function in your analysis
-for (co in colnames(contrasts)) {
-  make_md_plot(fit, coef = co, name = co, highlight_genes = config$calcium_genes)
-}
+## ---- FC vs B plots (uses pre-computed contrast_tables) -----------------
+message("\n📊 Generating FC-vs-B plots...")
+fc_b_dir <- here::here(config$out_root, "Plots/Volcano/FC-B")
+ensure_dir(fc_b_dir)
 
-## ---- FC vs B -----------------------------------------------------------
-deg_dir      <- here::here(config$out_root, "DE_results")
-volcano_dir  <- here::here(config$out_root, "Plots/Volcano/FC-B")
-dir.create(deg_dir,     recursive = TRUE, showWarnings = FALSE)
-dir.create(volcano_dir, recursive = TRUE, showWarnings = FALSE)
-
-make_fc_vs_B <- function(top, name, fc_cutoff = config$fc_cutoff, highlight_genes = NULL) {
-  pdf(file.path(volcano_dir, paste0(name, "_FC_vs_B.pdf")), 7, 6)
-  
-  # Create the B vs FC plot using our new function
-  gg <- create_B_FC_plot(
-    top,
-    fc_cutoff = fc_cutoff,
-    B_cutoff = 0,  # Traditional threshold for B-statistic
+for (co in names(contrast_tables)) {
+  plot <- create_B_FC_plot(
+    contrast_tables[[co]],
+    fc_cutoff = config$fc_cutoff,
+    B_cutoff = 0,
     top_n = 5,
-    highlight_gene = highlight_genes,
+    highlight_gene = config$calcium_genes,
     label_method = "top",
-    title = paste("log2FC vs B:", name),
-    show_grid = FALSE  # No grid lines as per your request
+    title = paste("log2FC vs B:", co),
+    show_grid = FALSE
   )
-  
-  print(gg)
-  dev.off()
-}
 
-for (co in colnames(contrasts)) {
-  top <- limma::topTable(fit, coef = co, number = Inf)
-  make_fc_vs_B(top, name = co, highlight_genes = config$calcium_genes)
+  save_plot(plot, file.path(fc_b_dir, paste0(co, "_FC_vs_B.pdf")),
+            width = 7, height = 6)
 }
+message("✓ FC-vs-B plots complete")
 
 
 ## DEG counts ----------------------------------------------------------
@@ -434,7 +450,7 @@ run_gsea_hsmm <- function(tbl, contrast, species){
       rank_metric  = "t",
       species      = species,
       n_pathways   = 30,
-      padj_cutoff  = 0.05,
+      padj_cutoff  = 1, # to save all pathways for downstream viz
       output_dir   = file.path(gsea_root, contrast),
       sample_annotation = DGE$samples[,c("genotype","days"),drop=FALSE],
       sample_order = ordered_samples,
@@ -444,51 +460,54 @@ run_gsea_hsmm <- function(tbl, contrast, species){
   return(results)  # Explicitly return the results
 }
 
-# Create a list to store all GSEA results
-all_gsea_results <- list()
+# Use checkpoint caching for expensive GSEA computation
+all_gsea_results <- load_or_compute(
+  checkpoint_file = file.path(checkpoint_dir, "all_gsea_results.rds"),
+  force_recompute = config$force_recompute,
+  description = "Generic MSigDB GSEA for all contrasts",
+  compute_fn = function() {
+    # Create a list to store all GSEA results
+    results <- list()
 
-# Run GSEA for each contrast and save results
-for (co in colnames(contrasts)) {
-  message("==== Working on contrast: ", co, " ====")
-  tbl <- topTable(fit, coef = co, number = Inf)
+    # Run GSEA for each contrast (uses pre-computed contrast_tables)
+    message("Running GSEA for all contrasts...")
+    for (co in names(contrast_tables)) {
+      message("==== Working on contrast: ", co, " ====")
 
-  safe_res <- tryCatch({
-    run_gsea_hsmm(tbl, co, species = "Homo sapiens")
-  }, error = function(e) {
-    message("❗ ERROR in GSEA for contrast ", co, ": ", e$message)
-    message("👀 Calling traceback():")
-    traceback()
-    NULL
-  })
+      safe_res <- tryCatch({
+        run_gsea_hsmm(contrast_tables[[co]], co, species = "Homo sapiens")
+      }, error = function(e) {
+        message("❗ ERROR in GSEA for contrast ", co, ": ", e$message)
+        message("👀 Calling traceback():")
+        traceback()
+        NULL
+      })
 
-  all_gsea_results[[co]] <- safe_res
-}
+      results[[co]] <- safe_res
+    }
 
-# Then call plot_all_gsea_results with these parameters for each contrast
-for (co in colnames(contrasts)) {
-  message("==== GSEA: ", co, " ====")
+    return(results)
+  }
+)
+
+# Generate additional GSEA plots for each contrast
+message("\n📊 Generating additional GSEA plots...")
+for (co in names(all_gsea_results)) {
   this_res_list <- all_gsea_results[[co]]
   if (is.null(this_res_list) || !length(this_res_list)) {
-    message("Skipping ", co, " (no results).")
+    message("  Skipping ", co, " (no results)")
     next
   }
-  
+
   plot_all_gsea_results(
-  gsea_list = this_res_list,
-  analysis_name = co,
-  out_root = gsea_root,
-  n_pathways = 30,
-  padj_cutoff = 0.05
- )
-
+    gsea_list = this_res_list,
+    analysis_name = co,
+    out_root = gsea_root,
+    n_pathways = 30,
+    padj_cutoff = 0.05
+  )
 }
-
-# ------------------------------------------------------------
-# CHECKPOINT: Save GSEA results (most expensive computation!)
-# ------------------------------------------------------------
-message("💾 Saving GSEA checkpoints...")
-saveRDS(all_gsea_results, file.path(checkpoint_dir, "all_gsea_results.rds"))
-message("✓ GSEA checkpoints saved (", length(all_gsea_results), " contrasts)")
+message("✓ GSEA analysis complete")
 
 # -------------------------------------------------------------------- #
 # 7.  SynGO GSEA                                                       #
@@ -518,39 +537,52 @@ syngo_gmt <- function(syngo_dir, namespace = "CC") {
   list(T2G = term2gene, T2N = term2name)
 }
 
-# execute gmt list preparation 
-syngo_lists <- syngo_gmt(config$syngo_dir, config$syngo_ns)
+# execute gmt list preparation
+syngo_lists <- syngo_gmt(here::here(config$syngo_dir), config$syngo_ns)
 
-# Create a list to store all GSEA results
-syngo_gsea_results <- list()
+# Use checkpoint caching for SynGO GSEA
+syngo_gsea_results <- load_or_compute(
+  checkpoint_file = file.path(checkpoint_dir, "syngo_gsea_results.rds"),
+  force_recompute = config$force_recompute,
+  description = "SynGO GSEA for all contrasts",
+  compute_fn = function() {
+    # Create a list to store all GSEA results
+    results <- list()
 
-# Run GSEA for each contrast
-for (co in colnames(contrasts)) {
-  tbl <- topTable(fit, coef = co, number = Inf)
-  
-  # Close any lingering graphic devices before starting new contrast
-  while (dev.cur() > 1) dev.off()
-  
-  # Capture the result
-  syngo_gsea_results[[co]] <- run_syngo_gsea(
-    tbl, 
-    co,
-    T2G = syngo_lists$T2G,
-    T2N = syngo_lists$T2N,
-    sample_annotation = annot  # Add if you have it
-  )
-  
-  # Ensure all devices are closed after each iteration
-  while (dev.cur() > 1) dev.off()
-}
+    # Run SynGO GSEA for each contrast (uses pre-computed contrast_tables)
+    message("Running SynGO GSEA for all contrasts...")
+    for (co in names(contrast_tables)) {
+      message("==== Working on contrast: ", co, " ====")
 
-# ------------------------------------------------------------
-# CHECKPOINT: Save SynGO GSEA results
-# ------------------------------------------------------------
-message("💾 Saving SynGO GSEA checkpoints...")
-saveRDS(syngo_gsea_results, file.path(checkpoint_dir, "syngo_gsea_results.rds"))
-saveRDS(syngo_lists,        file.path(checkpoint_dir, "syngo_lists.rds"))
-message("✓ SynGO GSEA checkpoints saved (", length(syngo_gsea_results), " contrasts)")
+      # Close any lingering graphic devices before starting new contrast
+      close_all_devices()
+
+      # Capture the result
+      results[[co]] <- run_syngo_gsea(
+        contrast_tables[[co]],
+        co,
+        T2G = syngo_lists$T2G,
+        T2N = syngo_lists$T2N,
+        sample_annotation = annot
+      )
+
+      # Ensure all devices are closed after each iteration
+      close_all_devices()
+    }
+
+    return(results)
+  }
+)
+message("✓ SynGO GSEA complete")
+
+# -------------------------------------------------------------------- #
+# 8.  MitoCarta GSEA - MOVED TO SEPARATE SCRIPT                        #
+# -------------------------------------------------------------------- #
+# NOTE: MitoCarta GSEA analysis has been moved to 2.add_MitoCarta.R
+#       Run that script separately after this main pipeline completes.
+#       This separation improves modularity and debugging.
+message("\n📝 MitoCarta GSEA analysis moved to 2.add_MitoCarta.R")
+message("   Run that script separately after this pipeline completes.")
 
 ###############################################################################
 ##  SynGO enrichment of intersecting DEG signatures
@@ -693,7 +725,7 @@ saveRDS(list(baseline9 = baseline9,
 universe_all <- rownames(fit)          # every gene tested in limma
 
 ## path to the original SynGO gene table
-syngo_gene_file <- file.path(config$syngo_dir, "syngo_genes.xlsx")
+syngo_gene_file <- here::here(config$syngo_dir, "syngo_genes.xlsx")
 
 enr_base9 <- synGO_enrich_symbol(baseline9, "baseline9",
                                  universe_all,
@@ -707,149 +739,14 @@ enr_mat38 <- synGO_enrich_symbol(mat38,     "mat38",
 
 
 # -------------------------------------------------------------------- #
-# 8.  Calcium genes focus                                              #
+# 9.  Calcium genes focus                                              #
 # -------------------------------------------------------------------- #
-
-#------------------------#
-# Calcium heatmap 
-#------------------------#
-
-# Create output directory for calcium gene analysis
-calcium_dir <- "03_Results/02_Analysis/Calcium_genes"
-dir.create(calcium_dir, recursive = TRUE, showWarnings = FALSE)
-
-# Extract expression data for calcium genes that are present in our dataset
-calcium_genes_present <- config$calcium_genes[config$calcium_genes %in% rownames(logCPM)]
-
-
-if (length(calcium_genes_present) > 0) {
-  # Extract expression values
-  calcium_expr <- logCPM[calcium_genes_present, ordered_samples]
-  
-  # Create heatmap of expression across all samples
-  pdf(file.path(calcium_dir, "calcium_genes_expression_heatmap.pdf"), width = 12, height = length(calcium_genes_present) * 0.4 + 3)
-  pheatmap(
-    calcium_expr,
-    main = "Expression of Calcium Signaling Genes",
-    annotation_col = annot,
-    annotation_colors = ann_colors,
-    color = colorRampPalette(rev(brewer.pal(11, "RdBu")))(100),
-    border_color = NA,
-    fontsize = 10,
-    fontsize_row = 10,
-    fontsize_col = 9,
-    cluster_rows = TRUE,
-    cluster_cols = FALSE,
-    scale = "row"  # Scale by row for better visualization
-  )
-  dev.off()
-  
-  # Create boxplots to compare expression across genotypes and timepoints
-  calcium_expr_melted <- reshape2::melt(
-    data.frame(Gene = rownames(calcium_expr), calcium_expr),
-    id.vars = "Gene",
-    variable.name = "Sample",
-    value.name = "Expression"
-  )
-  
-  # Add sample metadata
-  calcium_expr_melted$Genotype <- DGE$samples$genotype[match(as.character(calcium_expr_melted$Sample), rownames(DGE$samples))]
-  calcium_expr_melted$Days <- DGE$samples$days[match(as.character(calcium_expr_melted$Sample), rownames(DGE$samples))]
-  
-  # Create a multi-panel plot for each gene
-  pdf(file.path(calcium_dir, "calcium_genes_boxplots.pdf"), width = 12, height = 10)
-  
-  # Set up multi-panel layout
-  num_genes <- length(calcium_genes_present)
-  ncols <- min(3, num_genes)
-  nrows <- ceiling(num_genes / ncols)
-  par(mfrow = c(nrows, ncols))
-  
-  # Loop through each gene and create boxplot
-  for (gene in calcium_genes_present) {
-    gene_data <- subset(calcium_expr_melted, Gene == gene)
-    
-    # Create boxplot
-    boxplot(
-      Expression ~ Genotype:Days,
-      data = gene_data,
-      main = gene,
-      xlab = "",
-      ylab = "Log2 CPM",
-      col = c("#1B9E77", "#D95F02", "#7570B3", "#1B9E77", "#D95F02", "#7570B3"),
-      names = c("Ctrl D35", "G32A D35", "R403C D35", "Ctrl D65", "G32A D65", "R403C D65"),
-      las = 2  # Rotate x-axis labels
-    )
-    
-    # Add points for individual samples
-    stripchart(
-      Expression ~ Genotype:Days,
-      data = gene_data,
-      vertical = TRUE,
-      method = "jitter",
-      add = TRUE,
-      pch = 19,
-      col = "black",
-      cex = 0.6
-    )
-  }
-  
-  dev.off()
-  
-  # Test for differential expression of calcium genes in each contrast
-  calcium_gene_results <- data.frame()
-  
-  for (i in 1:ncol(contrasts)) {
-    contrast_name <- colnames(contrasts)[i]
-    
-    # Get results for this contrast
-    results <- topTable(fit, coef = i, number = Inf)
-    
-    # Extract results for calcium genes
-    calcium_results <- results[rownames(results) %in% calcium_genes_present, ]
-    
-    if (nrow(calcium_results) > 0) {
-      # Add contrast name
-      calcium_results$Contrast <- contrast_name
-      
-      # Combine with full results
-      calcium_gene_results <- rbind(calcium_gene_results, calcium_results)
-    }
-  }
-  
-  # Save results to file
-  write.csv(calcium_gene_results, file = file.path(calcium_dir, "calcium_genes_DE_results.csv"), row.names = TRUE)
-  
-  # Create volcano plots highlighting calcium genes for each contrast
-  for (i in 1:ncol(contrasts)) {
-    contrast_name <- colnames(contrasts)[i]
-    
-    # Get results for this contrast
-    results <- topTable(fit, coef = i, number = Inf)
-    
-    # Create volcano plot highlighting calcium genes
-    volcano_plot <- create_standard_volcano(
-      results,
-      p_cutoff = 0.05,
-      fc_cutoff = 1,  # Using lower FC threshold to capture more subtle changes
-      label_method = "none",  # Don't label all significant genes
-      highlight_gene = calcium_genes_present,  # Highlight calcium genes
-      # the problem is that the function highlights the gene names with the color of the dots, making text unreadable against the background of same color dots 
-      title = paste0(contrast_name, " - Calcium Genes")
-    )
-    
-    # Save the plot
-    ggsave(
-      file.path(calcium_dir, paste0(contrast_name, "_calcium_volcano.pdf")),
-      volcano_plot,
-      width = 8, height = 7
-    )
-  }
-}
+message("🔬 Running calcium gene analysis (separate script)...")
+source(here::here("02_Analysis/viz_calcium_genes.R"))
 
 
 # -------------------------------------------------------------------- #
-# 9.  Summary tables                                                   #
+# 10.  Summary tables                                                  #
 # -------------------------------------------------------------------- #
 sum_dir <- here::here(config$out_root,"Summary")
 dir.create(sum_dir, recursive = TRUE, showWarnings = FALSE)

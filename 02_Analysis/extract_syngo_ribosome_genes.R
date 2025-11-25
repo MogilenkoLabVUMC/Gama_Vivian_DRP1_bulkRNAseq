@@ -1,6 +1,6 @@
 ###############################################################################
 ##  Extract SynGO Ribosome Gene Lists                                       ##
-##  Quick script to extract presynaptic and postsynaptic ribosome genes     ##
+##  Script to extract presynaptic and postsynaptic ribosome genes           ##
 ###############################################################################
 
 library(here)
