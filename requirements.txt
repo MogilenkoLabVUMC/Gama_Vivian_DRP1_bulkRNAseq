@@ -1,0 +1,24 @@
+# Python Requirements - Gama_Vivian_DRP1_bulkRNAseq
+# =====================================================
+# Core packages required for analysis and visualization
+#
+# Installation:
+#   pip install -r requirements.txt
+#
+# For exact versions used in original analysis, see:
+#   python_requirements_freeze.txt
+# =====================================================
+
+# Core data manipulation and numerical computing
+numpy>=1.21.0
+pandas>=1.3.0
+
+# Visualization
+matplotlib>=3.4.0
+seaborn>=0.11.0
+
+# Specialized plots
+upsetplot>=0.6.0
+
+# Utilities
+pathlib2>=2.3.0; python_version < '3.4'
