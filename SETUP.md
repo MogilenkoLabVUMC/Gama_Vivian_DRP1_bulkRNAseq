@@ -1,10 +1,10 @@
 # Quick Setup Guide
 
-This guide provides step-by-step instructions to get started with the migrated GVDRP1 bulk RNA-seq analysis repository.
+Step-by-step instructions to get started with the migrated GVDRP1 bulk RNA-seq analysis repository after migration
 
 ## Prerequisites
-
 - Docker installed and running
+- [scbio-dock v0.5.1](https://github.com/tony-zhelonkin/scbio-docker/tree/v0.5.1) docker image built and available
 - VS Code with Dev Containers extension
 - SSH keys configured for GitHub access (to clone the RNAseq-toolkit submodule)
 
@@ -26,11 +26,11 @@ git submodule update --init --recursive
 
 ### 2. Verify Environment Configuration
 
-The `.devcontainer/.env` file has been pre-configured with your user ID:
+The `.devcontainer/.env` file has been pre-configured with user ID:
 
 ```bash
-LOCAL_UID=788715489
-LOCAL_GID=788600513
+LOCAL_UID=*
+LOCAL_GID=*
 ```
 
 **Optional:** Adjust resource limits in `.env` if needed:

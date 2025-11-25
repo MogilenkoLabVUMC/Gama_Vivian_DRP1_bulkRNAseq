@@ -1,505 +1,423 @@
-# Vivian Gama: DRP1 BulkRNAseq Experiment
+# DRP1 Bulk RNA-seq Analysis
 
-## Overview
-This repository contains the computational analysis pipeline for investigating the transcriptional effects of DRP1 mutations on neuronal maturation using bulk RNA-seq data.
+# Repositry analyst and maintainer 
+[Anton Zhelonkin, MD](https://github.com/tony-zhelonkin)
 
-## Migration Note (2025-11-19)
+# Intro
 
-This repository has been migrated to a new workstation environment. The frozen version corresponding to the published/submitted analysis is tagged as **v1.0** (commit `d6ec164`).
+Transcriptional analysis of DRP1 mutations (G32A, R403C) in iPSC-derived cortical neurons across neuronal maturation (Day 35 → Day 65). This repository contains a complete downstream analysis pipeline starting from count matrices, revealing a translation paradox where ribosome biogenesis increases while synaptic translation fails.
 
-**Key Changes:**
-- Updated to [scdock-r-dev:v0.5.1](https://github.com/tony-zhelonkin/scbio-docker/tree/v0.5.1) container with Docker Compose configuration
-- All paths now use relative references for cross-workstation portability
-- RNAseq-toolkit integrated as a git submodule (no external mounts required)
-- Raw sequencing data dependencies removed (preprocessing complete, counts matrices available)
-
-**Container Details:**
-- **Image:** `scdock-r-dev:v0.5.1` from [scbio-docker](https://github.com/tony-zhelonkin/scbio-docker/tree/v0.5.1)
-- **Features:** R 4.x with Bioconductor, Python 3.x with scientific stack, Jupyter, RStudio Server
-- **Configuration:** Docker Compose with environment variable support
-
-**For setup instructions, see:** `MIGRATION.md`
-
-**For change tracking:** `CHANGELOG.md`
-
-## Background
-Mitochondrial fission, mediated by DRP1, is vital for the rapid metabolic shifts that occur during cortical development and plays a critical role in neuronal development and function. De-novo DNM1L loss-of-function mutations (G32A in the GTP-ase domain, R403C in the stalk domain) are emerging in paediatric neuro-developmental cohorts but their domain-specific impact on neuronal maturation is unclear. This study examines two domain-specific DRP1 mutations: G32A (GTPase domain) and R403C (stalk domain), both identified in pediatric neurodevelopmental disorders. The analysis compares transcriptional profiles between mutant and control iPSC-derived cortical neurons at two developmental timepoints (35 and 65 days in vitro).
-
-## Experimental Design
-- **Cell lines**: iPSC-derived cortical neurons with heterozygous G32A or R403C mutations vs. controls
-- **Timepoints**: Day 35 and Day 65 of differentiation
-- **Sample size**: 26 samples total across conditions and timepoints
-- **Sequencing**: Bulk RNA-seq, paired-end reads
-- **Reference genome**: GRCh38.p14 (hg38)
-
-
-## Thoughts on analysis approaches
-
-**Synaptic Gene Ontologies.** I found this SynGO database, one of the reviewers mentioned. The ontologies are downloadable. I can integrate this database into our pipeline and test DEG lists against this databases. That should highlight presynaptic vs postsynaptic signatures more cleanly than generic GO.
-
-**Transcription factor programs.** I'm thinking if any transcription factors are involved. I hope I could try and run some inference tool (there are couple like decoupleR) that predicts Transcription factor activity from bulk RNAseq expression data. This might give a mechanistic bridge from elongated mitochondria -> TF programmes -> synaptic genes.
-
-**Specific genes of interest.** Have a specific focus on a list of genes that are biologically relevant to keep an eye on.
-
-**Gene Networks.** We could run weighted-gene correlation network (WGCNA) analysis on all the samples. This might uncover modules of co-regulated genes in your data. We could further test enrichment of these modules in SynGO or any other database of interest. We could also correlate the modules with some phenotype data, that you might have, say mitochondrial length, Ca²⁺ peak, synapse density or whatever, or make a correlation heatmap matrix of "co-regulated network module" X "phenotypic trait". 
-
-Also I don't think you exploit your data enough in terms of statistical modelling. We could build a linear model to interrogate it with our biological questions, that would span beyond just the standard pair-wise comparisons. 
-
-### Statistical Design and Contrasts
-
-For example, we may of course ask ourselves, what's the difference between each kind of mutant vs control at each time-point.
-
-Mathematically, this would encode into these 4 separate model questions:
-
-```r
-G32A_vs_Ctrl_D35  =  D35_G32A  - D35_Control,
-R403C_vs_Ctrl_D35 =  D35_R403C - D35_Control,
-G32A_vs_Ctrl_D65  =  D65_G32A  - D65_Control,
-R403C_vs_Ctrl_D65 =  D65_R403C - D65_Control,
-```
-
-Each such contrast (G32A_vs_Ctrl_D35 etc.) gives its own list of DEGs, that we could test in a pathway analysis of any kind (GO, GSEA doesn't matter).
-
-And of course we might ask, what's the maturation effect inside each genotype:
-
-```r
-Time_Ctrl   =  D65_Control - D35_Control, # What genes change during normal maturation?
-Time_G32A   =  D65_G32A    - D35_G32A,    # What genes change during G32A mutant maturation?
-Time_R403C  =  D65_R403C   - D35_R403C,   # What genes change during R403C mutant maturation?
-```
-
-Again, each question gives us its separate DEG list, which we could dig deeper into pathways further.
-
-But we also might go for more complex **interaction questions** - "Difference-in-difference" questions:
-
-```r
-Int_G32A = (D65_G32A - D65_Control) - (D35_G32A - D35_Control),   # Does G32A's maturation trajectory differ from control trajectory?
-Int_R403C = (D65_R403C - D65_Control) - (D35_R403C - D35_Control), # Does R403C's maturation trajectory differ from control?
-```
-
-Positive DEGs: are the ones differentially up-regulated over time only in the mutant.
-
-These type of questions can be modelled too. They isolate genes whose time-course is selectively altered by the mutation, not just genes that differ at one time-point.
-
-Combination of such Q&A would give us some insight. For example:
-
-| Result pattern | Time_Ctrl | Time_G32A | Int_G32A | Interpretation |
-|----------------|-----------|-----------|----------|----------------|
-| gene doubles in Ctrl & doubles in G32A | +1 | +1 | 0 | same maturation → not highlighted |
-| gene doubles in Ctrl but stays flat in G32A | +1 | 0 | –1 | G32A fails to up-regulate this gene |
-| gene flat in Ctrl but doubles in G32A | 0 | +1 | +1 | gene activation is mutant-specific |
-
-We could go and model other questions like this. For example, we might be interested in common DEGs mis-expressed similarly in both G32A and R403C (all DRP1 mutants) vs control. We also might include phenotypic traits in the model.
-
-
-## Hypothesis 
-Domain-specific DRP1 mutations differentially disturb mitochondrial dynamics, which in turn impairs synaptic development, calcium handling and the transcriptional programme of maturing cortical neurons.
-
-## Experimental design
-Generate iPSC lines harbouring heterozygous G32A or R403C mutations → dual-SMAD differentiation to glutamatergic cortical cultures → Phenotype mitochondria (SIM, live spinning-disk), synapses (SYP/PSD-95 SIM), and Ca²⁺ dynamics (Fluo-4 imaging) at 35, 65, 100 DIV
-
-## Experimental findings
-Both mutants retain the expected cortical-neuron marker profile but exhibit persistently hyper-elongated axonal mitochondria. Size-dependent, mutation-specific motility phenotypes (e.g. faster small mitochondria in R403C axons). Functional read-outs confirm diminished pre/post-synaptic marker volume and markedly exaggerated glutamate-evoked Ca²⁺ transients in both mutants
-
-### Novelty
-**Domain-resolved design** – analysing two distinct DRP1 mutations enables structure–function inference and partially explains heterogeneous patient presentations.  
-
-**Multi-modal validation** – transcriptomic, imaging and functional assays converge on impaired synapse/Ca²⁺ regulation, lending biological credibility to RNA-seq findings.  
-
-
-### Keep an eye out on 
-**Calcium signaling genes:** NEURONATIN (NNAT), CACNG3, CACNA1C, CACNA1S, ATP2A1, RYR1, MYLK3, CASR, VDR, STIM1, STIM2, ORAI1, CALB1 and CALR
-
-### Collaborator questions
-1. The key question is: what are the effects of the G32A and R403C mutations in the transcriptional landscape of neurons?
-2. We have 2 time points (35 DIV and 65 DIV), thus we were also wondering whether the mutations had any effects on maturation (compared to controls)
-
-
-### General Approach Notes
-The study asks **how two domain-specific DRP1 mutations (G32A = GTPase, R403C = stalk) disturb cortical-neuron maturation**.  
-
-**Phenotypes observed:**
-
-- hyper-elongated, sluggishly trafficked mitochondria
-- widespread DEGs at 35 DIV (ion-channel, synapse, ROS) that largely normalise by 65 DIV
-- smaller/rarer synapses and exaggerated glutamate-evoked Ca²⁺ transients
-    
-
-The reviewers want a **mechanistic bridge** from _mitochondrial shape → nuclear transcriptome → synaptic outcome_.
-
-
-
-
-## Repository Structure
-
-Below is a high-level overview of the repository:
+## 📂 Repository Structure
 
 ```
-├── 00_Data/                    # Reference data (SynGO database)
-├── 01_Scripts/                 # Analysis scripts and custom functions
-│   ├── RNAseq-toolkit/        # Git submodule: analysis toolkit and GSEA module
-│   └── R_scripts/             # Custom R functions for this project
-├── 02_Analysis/               # Main analysis pipeline
-├── 03_Results/                # Output files and results
-│   ├── 01_Preprocessing/      # Data preprocessing results (includes counts matrices)
-│   └── 02_Analysis/           # Analysis results and plots
-├── .devcontainer/             # Docker container configuration
-├── MIGRATION.md               # Migration documentation
-├── CHANGELOG.md               # Change tracking
-└── README.md                  # This file
+├── 00_Data/                       # Reference databases (SynGO, MitoCarta)
+├── 01_Scripts/
+│   ├── RNAseq-toolkit/           # Git submodule with GSEA & DE helper functions
+│   └── R_scripts/                # Project-specific helpers (SynGO, MitoCarta integration)
+├── 02_Analysis/                   # Analysis pipeline scripts (see SCRIPTS.md)
+│   ├── 1a.Main_pipeline.R        # Core DE analysis + GSEA with checkpointing
+│   ├── 1b-3.*.R                  # Contrast tables, MitoCarta, Python exports
+│   ├── viz_*.R                   # R visualization scripts (8 scripts)
+│   ├── *.py                      # Python visualization scripts (4 scripts)
+│   ├── SCRIPTS.md                # Complete script inventory and dependencies
+│   └── .deprecated/              # Archived old scripts
+├── 03_Results/
+│   ├── 01_Preprocessing/         # Count matrices and metadata (input data)
+│   └── 02_Analysis/
+│       ├── checkpoints/          # Cached computation results (.rds files)
+│       ├── DE_results/           # Differential expression tables (9 contrasts)
+│       ├── Python_exports/       # GSEA data exported for Python (CSV files)
+│       └── Plots/                # All visualizations (see folder READMEs)
+│           ├── Cross_database_validation/  # Pattern validation across 10 databases
+│           ├── Ribosome_paradox/          # Translation crisis core finding
+│           ├── Publication_Figures/        # Manuscript-ready figures
+│           ├── Mito_translation_cascade/   # Energy→translation→synapse cascade
+│           └── Synaptic_ribosomes/         # Pre/postsynaptic translation analysis
+├── docs/                          # Extended documentation
+│   ├── SESSION_HISTORY.md        # Session-by-session development log
+│   ├── NEXT_STEPS.md             # Current priorities and future directions
+│   ├── MIGRATION.md              # Container setup and migration notes
+│   └── biological_context.md     # Literature review and mechanistic model
+└── .deprecated/                   # Archived materials (old docs, backups)
 ```
 
-**Note:** The RNAseq-toolkit is a git submodule. Initialize it after cloning:
+## 🚀 Quick Start
+
+### Running the Analysis Pipeline
+
+**Prerequisites**: to run the analysis in the same computational enviroment it was tested in you will need to build and install the [scbio-dock v0.5.1](https://github.com/tony-zhelonkin/scbio-docker/tree/v0.5.1)
+
 ```bash
+# 1. Main differential expression and GSEA (uses checkpointing)
+Rscript 02_Analysis/1a.Main_pipeline.R          # ~30-60 min first run, 5-10 min cached
+
+# 2. Generate contrast tables and annotations
+Rscript 02_Analysis/1b.generate_contrast_tables.R
+Rscript 02_Analysis/2.add_MitoCarta.R
+Rscript 02_Analysis/3.export_gsea_for_python.R
+
+# 3. Generate R visualizations (run any/all, independent)
+Rscript 02_Analysis/viz_ribosome_paradox.R
+Rscript 02_Analysis/viz_mito_translation_cascade.R
+Rscript 02_Analysis/viz_synaptic_ribosomes.R
+# ... (see 02_Analysis/SCRIPTS.md for complete list)
+
+# 4. Generate Python publication figures
+python3 02_Analysis/6.publication_figures.py
+python3 02_Analysis/8.pattern_summary_normalized.py
+```
+
+**Total runtime**: ~1-2 hours (first run), ~20-30 minutes (subsequent runs with caching)
+
+### Script Organization
+
+- **Main pipeline** (1a-3.R): Core analysis, run in order
+- **Visualization scripts** (viz_*.R): Independent R plots, run in any order
+- **Python scripts** (6-8.py): Publication figures, run after R exports
+- **See**: `02_Analysis/SCRIPTS.md` for complete inventory and dependencies
+
+## 🧬 Experimental Design
+
+| Component | Details |
+|-----------|---------|
+| **Cell type** | iPSC-derived cortical excitatory neurons |
+| **Genotypes** | Ctrl, G32A (GTPase domain), R403C (stalk domain) - heterozygous DRP1 mutations |
+| **Timepoints** | Day 35 (early maturation) and Day 65 (mature neurons) |
+| **Replicates** | N=3 biological replicates per group (18 samples total) |
+| **Contrasts** | 9 contrasts: mutation effects (6), maturation effects (3), interactions (2) |
+| **Question** | How do domain-specific DRP1 mutations alter maturation trajectories and mitochondrial-synaptic coupling? |
+
+**Contrast Framework**:
+- **Early/Late effects**: G32A vs Ctrl (D35, D65), R403C vs Ctrl (D35, D65)
+- **Maturation trajectories**: Time_Ctrl, Time_G32A, Time_R403C (D35 → D65 changes)
+- **Mutation-specific maturation**: Maturation_G32A_specific, Maturation_R403C_specific (interactions)
+
+## 📊 Key Findings
+
+### Discoveries
+
+DRP1 mutations seem to trigger a **translation crisis** where neurons attempt a compensation by increasing ribosome production, but fail to maintain functional synaptic translation:
+
+| Pool | Early (D35) | Maturation (TrajDev) | Late (D65) | Pattern |
+|------|-------------|----------------------|------------|---------|
+| **Cytoplasmic ribosome biogenesis** | ↓ (NES -2.6) | **↑ (NES +2.25)** | Normal | Compensation |
+| **Synaptic ribosomes (pre/post)** | ↑ (NES +2.3-2.5) | **↓ (NES -2.9 to -3.0)** | ↓ (NES -2.5) | Collapse |
+| **Mitochondrial ribosomes** | ↓ (NES -2.2) | **↑ (NES +1.9)** | Normal | Compensation |
+
+**Statistical support**: FDR < 1e-11 for key effects, validated across 10 independent pathway databases
+
+### Potential Mechanistic Model
+
+```
+DRP1 Mutation → Mitochondrial Positioning Failure
+    ↓
+Synaptic ATP Depletion
+    ↓
+┌─────────────────────────────────┬──────────────────────────────────┐
+│ COMPENSATION (Pools 1 & 3)     │ FAILURE (Pool 2)                 │
+├─────────────────────────────────┼──────────────────────────────────┤
+│ ↑ Ribosome biogenesis          │ ↓ Synaptic translation           │
+│ ↑ Mitochondrial ribosomes      │ ↓ Pre/postsynaptic programs      │
+│ (Adaptive response)             │ (Energy bottleneck)              │
+└─────────────────────────────────┴──────────────────────────────────┘
+    ↓
+Translation Crisis at Synapses → Synaptic Dysfunction → Epilepsy
+```
+
+**Key insight**: Compensation fails presumably because the root cause (ATP delivery) remains unresolved—making more ribosomes doesn't help when they lack energy to function.
+
+### Cross-Database Validation
+
+Findings replicated across 10 independent databases:
+- **SynGO** (synaptic ontology): 19-22 compensation pathways per mutation
+- **MitoCarta** (mitochondrial): 45 (G32A) and 29 (R403C) compensation pathways
+- **GO:BP/CC/MF** (Gene Ontology): 3000+ pathways show consistent patterns
+- **MSigDB** (Hallmark, KEGG, Reactome, WikiPathways, TF targets): Corroborate findings
+
+**Pattern distribution**: Compensation is the dominant response (~60% of significant pathways), with G32A showing stronger compensation than R403C.
+
+## 📖 Documentation
+
+### Core Documentation
+
+| File | Purpose |
+|------|---------|
+| [02_Analysis/SCRIPTS.md](02_Analysis/SCRIPTS.md) | Script inventory: active vs deprecated, dependencies, usage |
+| [docs/CHANGELOG.md](CHANGELOG.md) | Version history, reviewer tracking, major changes |
+
+### Scientific Context
+
+| File | Purpose |
+|------|---------|
+| [docs/biological_context.md](docs/biological_context.md) | Literature review, mechanistic model, clinical relevance |
+| [docs/MIGRATION.md](docs/MIGRATION.md) | Container setup, environment configuration |
+| Plot folder READMEs | Scientific documentation for each analysis (see below) |
+
+### Plot-Specific Documentation
+
+Each major plot folder contains a comprehensive `README.md` with:
+- Generating script and runtime
+- Plot descriptions (axes, colors, statistics)
+- Methods (GSEA parameters, statistical tests, sample sizes)
+- Interpretation guide
+- Key findings and biological context
+
+**Documented folders**:
+- `Cross_database_validation/` - Pattern validation across databases
+- `Ribosome_paradox/` - Translation crisis core finding
+- `Publication_Figures/` - Manuscript-ready integrated figures
+- `Mito_translation_cascade/` - Energy → translation → synapse cascade
+- `Synaptic_ribosomes/` - Compartment-specific ribosome analysis
+- *(More READMEs available in other plot folders)*
+
+## 🛠️ Setup
+
+### Prerequisites
+
+- Docker and VS Code with Dev Containers extension
+- Git with submodule support
+- ~10 GB disk space for container and results
+
+### Installation
+
+```bash
+# Clone repository
+git clone <repo-url>
+cd Gama_Vivian_DRP1_bulkRNAseq
+
+# Initialize submodules (RNAseq-toolkit)
 git submodule update --init --recursive
+
+# Configure environment (optional, has defaults)
+cp .env.example .devcontainer/.env
+# Edit .devcontainer/.env to set UID/GID if needed
+
+# Launch container
+# Open folder in VS Code → Command Palette → "Dev Containers: Reopen in Container"
 ```
-## Data Processing Workflow
 
-### 1. Data Preprocessing
+**Container**: [`scdock-r-dev:v0.5.1`](https://github.com/tony-zhelonkin/scbio-docker/tree/v0.5.1) (R 4.3+, Python 3.x, Bioconductor packages)
 
+## 🔍 What to Explore First
 
+### For Biological Interpretation
 
-#### Preparing index
+1. **Publication Figures** (`03_Results/02_Analysis/Plots/Publication_Figures/`)
+   - Fig1: Ribosome paradox visualization
+   - Fig2: MitoCarta trajectory patterns
+   - Fig3: Pattern classification summary across databases
 
-GRCh38.p14 reference genome (hg38, GCF_000001405.40, release date Feb 3, 2022) for read mapping. 'GCF_000001405.40_GRCh38.p14_genomic.gff.gz' was used as the annotation. To run our custom QC scripts we pre-processed the annotation in the following manner. 
+2. **Ribosome Paradox** (`03_Results/02_Analysis/Plots/Ribosome_paradox/`)
+   - Three-pool trajectory plot showing divergent compensation vs collapse
+   - Data tables with statistics for all pathways
 
-**1. Prep refFlat from gtf**
+3. **Cross-Database Validation** (`03_Results/02_Analysis/Plots/Cross_database_validation/`)
+   - 10 trajectory comparative plots (one per database)
+   - Pattern summary showing compensation dominance
+
+### For Methods and Reproducibility
+
+1. **Main pipeline script**: `02_Analysis/1a.Main_pipeline.R`
+   - Checkpoint-based analysis (caches results for fast re-runs)
+   - Complete DE and GSEA workflow
+
+2. **Script inventory**: `02_Analysis/SCRIPTS.md`
+   - Active vs deprecated scripts
+   - Dependencies and run order
+   - Quick reference commands
+
+### For Data Access
+
+- **DE results**: `03_Results/02_Analysis/DE_results/*.csv` (9 contrast tables)
+- **GSEA results**: `03_Results/02_Analysis/checkpoints/*.rds` (R objects) or `Python_exports/*.csv` (flat files)
+- **Checkpoints**: `03_Results/02_Analysis/checkpoints/` (cached computation for fast re-analysis)
+
+## 🔬 Methodology
+
+### Statistical Analysis Pipeline
+
+#### 1. Data Preprocessing
+
+**Normalization:**
+- **Method:** TMM (Trimmed Mean of M-values) via edgeR
+- **Filtering:** filterByExpr() via edgeR
+- **Transformation:** edgeR::voomLmFit with sample.weights = FALSE
+- 
+- voom log2-CPM with observation  weights
+
+**Quality Control:**
+- Sample correlation heatmaps (Pearson r > 0.9 within replicates)
+- MDS plots for outlier detection
+- Expression distribution assessment
+
+#### 2. Differential Expression Analysis
+
+**Software:** limma-voom (v3.56+)
+
+**Model:**
+```
+Design matrix: ~0 + group
+Where group = genotype × timepoint (6 levels)
+```
+
+**Statistical framework:**
+1. Linear model fitting: `voomLmFit()` with precision weights
+2. Contrast estimation: `contrasts.fit()` for 9 biological comparisons
+3. Empirical Bayes moderation: `eBayes(robust = TRUE)`
+4. Multiple testing: Benjamini-Hochberg FDR correction
+
+**Significance thresholds:**
+| Parameter | Value | Rationale |
+|-----------|-------|-----------|
+| p-value | 0.05 | Standard significance level |
+| FDR | 0.05 | Controls false discovery rate |
+| |log2FC| | > 1 | 2-fold change minimum for biological relevance |
+
+#### 3. Gene Set Enrichment Analysis (GSEA)
+
+**Software:** fgsea (v1.26+) via clusterProfiler wrapper
+
+**Algorithm:**
+- Ranking metric: Moderated t-statistic (preserves sign and precision)
+- Permutations: 10,000 (gene set randomization)
+- Gene set sizes: 10-500 genes
+- Normalization: Enrichment Score normalized by set size
+
+**Databases analyzed (12 total):**
+
+| Category | Database | Gene Sets | Source |
+|----------|----------|-----------|--------|
+| Curated | Hallmark | 50 | MSigDB |
+| Pathway | KEGG | 186 | MSigDB |
+| Pathway | Reactome | 1,615 | MSigDB |
+| Ontology | GO:BP | 7,658 | MSigDB |
+| Ontology | GO:CC | 1,006 | MSigDB |
+| Ontology | GO:MF | 1,738 | MSigDB |
+| Pathway | WikiPathways | 664 | MSigDB |
+| Curated | Canonical | 2,922 | MSigDB |
+| Perturbation | CGP | 3,358 | MSigDB |
+| Regulatory | TF targets | 1,137 | MSigDB |
+| Synaptic | SynGO | ~300 | SynGO v1.1 |
+| Mitochondrial | MitoCarta | 149 | MitoCarta 3.0 |
+
+**Interpretation:**
+- NES > 0: Pathway genes enriched in upregulated direction
+- NES < 0: Pathway genes enriched in downregulated direction
+- |NES| > 1.5: Moderate enrichment
+- |NES| > 2.0: Strong enrichment
+
+#### 4. Trajectory Pattern Classification
+
+**Framework:** Early → TrajDev → Late
+
+Contrasts mapped to developmental stages:
+| Stage | G32A Contrast | R403C Contrast | Biological Question |
+|-------|---------------|----------------|---------------------|
+| Early | G32A_vs_Ctrl_D35 | R403C_vs_Ctrl_D35 | Initial mutation effect |
+| Late | G32A_vs_Ctrl_D65 | R403C_vs_Ctrl_D65 | Mature state effect |
+| TrajDev | Maturation_G32A_specific | Maturation_R403C_specific | Trajectory deviation |
+
+**Pattern definitions:**
+| Pattern | Criteria | Interpretation |
+|---------|----------|----------------|
+| Compensation | Early defect + opposing TrajDev + Late improvement | Active adaptive response |
+| Progressive | Early defect + amplifying TrajDev + Late worsening | Cumulative damage |
+| Persistent | Stable defect, no TrajDev change | Static dysfunction |
+| Late_onset | No Early defect, Late defect emerges | Maturation-dependent |
+| Transient | Early defect, resolved by Late | Developmental delay |
+
+**Thresholds:**
+- Defect: |NES| > 0.5 minimum, > 1.0 for clear effect
+- Change: |ΔNES| > 0.5 between stages
+
+### Reproducibility Features
+
+**Checkpoint caching:**
+- Expensive computations saved as RDS files
+- Automatic loading on re-runs (10x speedup)
+- Force recompute: `config$force_recompute = TRUE`
+
+**Version control:**
+- Analysis scripts tracked in git
+- Helper functions via git submodule (`RNAseq-toolkit`)
+- Container environment locked at [scbio-dock v0.5.1](https://github.com/tony-zhelonkin/scbio-docker/tree/v0.5.1)
+- Runtime R packages documented in `R_session_info.txt` and `R_packages.txt`
+- Python dependencies: `requirements.txt` (core packages) and `python_requirements_freeze.txt` (full freeze) 
+
+### Software Versions
+
+**R environment:**
+- **Base:** R 4.3+ (via scbio-dock v0.5.1 container)
+- **Package manifest:** `R_session_info.txt` (complete sessionInfo output)
+- **Package list:** `R_packages.txt` (simple version listing)
+- **Runtime installs:** See `02_Analysis/0.runtime_installs.R` for additional packages
+
+**Key R packages:**
+- Differential expression: edgeR (3.42+), limma (3.56+), DESeq2 (1.40+)
+- GSEA: clusterProfiler (4.8+), fgsea (1.26+), msigdbr (7.5+)
+- Annotation: org.Hs.eg.db (3.17+)
+- Co-expression: WGCNA (1.72+)
+- Visualization: ggplot2 (3.4+), pheatmap (1.0+), patchwork (1.1+)
+
+**Python environment:**
+- **Base:** Python 3.9+ (via scbio-dock v0.5.1 container)
+- **Core packages:** `requirements.txt` (install with `pip install -r requirements.txt`)
+- **Full freeze:** `python_requirements_freeze.txt` (exact versions for reproducibility)
+
+**Key Python packages:**
+- Data manipulation: pandas (1.3+), numpy (1.21+)
+- Visualization: matplotlib (3.4+), seaborn (0.11+)
+- Specialized plots: upsetplot (0.6+)
+
+**To reproduce exact environment:**
 ```bash
-./GTFtoRefFlat.sh -i GCF_000001405.40_GRCh38.p14_genomic.gtf.gz -o GCF_000001405.40_GRCh38.p14_genomic.refflat
+# R packages - manually verify against R_session_info.txt
+Rscript 02_Analysis/0.runtime_installs.R
+
+# Python packages - install exact versions
+pip install -r python_requirements_freeze.txt
 ```
 
-**2. Prep ribosomal intervals**
-```bash
-./getRibosomalIntervals_from_gtf.sh -i GCF_000001405.40_GRCh38.p14_genomic.gtf.gz -r GCF_000001405.40_GRCh38.p14_genomic.fna.gz -o GCF_000001405.40_GRCh38.p14_genomic.ribosomal_intervals
-```
+## Supporting tools
 
-**3. Get BED12 from GTF**
-```bash
-./GTFtoBED12.sh -i GCF_000001405.40_GRCh38.p14_genomic.gtf.gz -o GCF_000001405.40_GRCh38.p14_genomic.bed12
-```
+### [scbio-dock v0.5.1](https://github.com/tony-zhelonkin/scbio-docker/tree/v0.5.1) 
+RNAseq docker container for reproducible computational environments across lab projects 
 
-**4. (Optional) Change to ReSeQC compatible bed**
-```bash
-./BEDtoRefSeqBED_human.sh -i GCF_000001405.40_GRCh38.p14_genomic.bed12 -o GCF_000001405.40_GRCh38.p14_genomic.reseqc.bed12
-```
+### [RNAseq-toolkit](https://github.com/tony-zhelonkin/RNAseq-toolkit/tree/dev-GVDRP1) 
+Custom RNAseq script automating DE, GSEA analysis and visualisations 
 
-**5. Alignment**
+### [Preprocessing scripts](https://github.com/tony-zhelonkin/bulkRNAseq_pipeline_scripts)
+Raw fastq files pre-processed with the custom scripts and bioinformatics tools version locked at [scbio-docker v0.2.0](https://github.com/tony-zhelonkin/scbio-docker/tree/v0.2.0)
 
-STAR two-pass alignment with genome index generation:
-```bash
-STAR --runMode genomeGenerate \
-     --runThreadN 8 \
-     --genomeDir ../ref_index100 \
-     --genomeFastaFiles ./GCF_000001405.40_GRCh38.p14_genomic.fna \
-     --sjdbGTFfile ./GCF_000001405.40_GRCh38.p14_genomic.gtf \
-     --sjdbOverhang 100  
-```
+### AI-assistants
 
-**6. Post-Alignment QC**
-Post-alignment QC using multiple tools:
-- **Strand inference**: RSeQC infer_experiment.py (determined non-stranded)
-- **Alignment metrics**: Picard CollectRnaSeqMetrics, MarkDuplicates
-- **Read statistics**: samtools flagstat
-- **Comprehensive reporting**: MultiQC aggregation
+This project utilized AI tools to accelerate analysis pipeline development, biological interpretation, and documentation:
 
-**Infer experiment**. 
-Experiment non-stranded
-```bash
-for file in 03_Results/01_Preprocessing/02_Alignment/aligned_bam/*.bam; do \
-	echo "Strandedness of"
-	infer_experiment.py \
-		-i "$file" \
-		-r /data/human_ref/ref_genome/GCF_000001405.40_GRCh38.p14_genomic.bed12 \
-		-s 2000000 \
-		-q 30
-done
-```
+**[Claude Code](https://github.com/anthropics/claude-code) (Anthropic):**
+- **Primary tool** for pipeline development, refactoring, and visualization implementation
+- **Custom agents** developed for specialized tasks:
+  - `bio-research-visualizer` (November 2025): Deep web research for biological mechanism interpretation, literature synthesis, and visualization strategy recommendations. Used for cross-database validation framework development and ribosome paradox biological interpretation.
+  - `rnaseq-insight-explorer` (November 2025): RNAseq results exploration, pattern discovery, critical evaluation of biological claims, and data-driven visualization recommendations. Used for rough cross-database GSEA results querry and publication figure design.
 
-**Alignment metrics capture**
-Running post-alignment QC scripts
-```bash
-docker run --rm -it \
-  --name post_alignQC \
-  -v "$HOME/projects/GVDRP1/03_Results/01_Preprocessing/02_Alignment/aligned_bam":/in:ro \
-  -v "$HOME/projects/GVDRP1/03_Results/01_Preprocessing/03_Post_AlignmentQC":/out \
-  -v "$HOME/projects/GVDRP1/03_Results/01_Preprocessing/03_Post_AlignmentQC/tmp":/out/tmp \
-  -e TMPDIR=/out/tmp \
-  -v "$HOME/data/GRCh38_hs_genome/ref_genome":/genome:ro \
-  -v "$HOME/pipeline/bulkRNAseq_scripts":/pipeline:ro \
-  scdock-r-dev:v0.2 \
-  bash -c "/pipeline/scripts_bash/getPostAlignmentQC.sh \
-             -i /in \
-             -o /out \
-             -j 2 \
-             -t 4 \
-             -r /genome/GCF_000001405.40_GRCh38.p14_genomic.fna \
-             -e /genome/GCF_000001405.40_GRCh38.p14_genomic.ribosomal_intervals \
-             -f /genome/GCF_000001405.40_GRCh38.p14_genomic.refflat \
-             -b /genome/GCF_000001405.40_GRCh38.p14_genomic.reseqc.bed12 \
-             --strand NONE \
-             --copy-sorted"
-```
+**[Gemini CLI](https://github.com/google-gemini/gemini-cli) (Google):**
+- Supporting tool for specific documentation restructure and code review 
 
-**7. Feature quantification**
+**[Codex](https://github.com/openai/codex) (OpenAI):**
+- Supporting tool for git management
 
-Gene-level quantification using featureCounts:
+**Scope:** AI tools assisted with code implementation, documentation generation, and preliminary biological context research at the stage of the RNAseq analysis. All scientific interpretations were validated against peer-reviewed literature, and all statistical analyses follow standard bioinformatics best practices. Human oversight guided all analytical decisions and biological conclusions.
 
-```bash
-docker run --rm -it \
-  --name feature_counts_run \
-  -v "$HOME/projects/GVDRP1/03_Results/01_Preprocessing/02_Alignment/aligned_bam":/in:ro \
-  -v "$HOME/projects/GVDRP1/03_Results/01_Preprocessing/04_FeatureCounts":/out \
-  -v "$HOME/data/GRCh38_hs_genome/ref_genome":/genome:ro \
-  -v "$HOME/pipeline/bulkRNAseq_scripts":/pipeline:ro \
-  scdock-r-dev:v0.2 \
-  bash -c "/pipeline/scripts_bash/runPostAlignmentQC.sh \
-             -i /in \
-             -o /out \
-             -a /genome/GCF_000001405.40_GRCh38.p14_genomic.gtf \
-             -s 0 \
-             -t 8 \
-             -f "exon" \
-             -g "gene_id" \
-             -p yes"
-```
+**Transparency:** Analysis scripts, custom agent definitions (`.claude/agents/`), and project instructions (`CLAUDE.md`) are version-controlled, and committed to the repo for reproducibility .
 
-## 2. Analysis Pipeline
+### Data Availability
 
-The main analysis is performed by `02_Analysis/Analysis_pipeline_fin.R`, which implements a comprehensive differential expression and pathway analysis workflow.
+**Input data:**
+- Count matrices: `03_Results/01_Preprocessing/04_FeatureCounts/count_matrices_fc/`
+- Sample metadata: Same location
 
-### Analysis Overview
+**Output data:**
+- DE tables: `03_Results/02_Analysis/DE_results/*.csv`
+- GSEA results: `03_Results/02_Analysis/checkpoints/*.rds`
+- Visualizations: `03_Results/02_Analysis/Plots/`
 
-The pipeline performs the following key analyses:
-
-1. **Data preprocessing and quality control**
-2. **Differential expression analysis** using limma-voom
-3. **Multiple visualization approaches** (volcano plots, heatmaps, PCA)
-4. **Pathway enrichment analysis** using MSigDB databases
-5. **Specialized SynGO analysis** for synaptic gene ontologies
-6. **Calcium signaling gene focus analysis**
-
-### Statistical Design
-
-#### Experimental Design Matrix
-Factorial design 'genotype × timepoint' with the following contrasts:
-**Pairwise Comparisons (Mutation vs Control)**
-- `G32A_vs_Ctrl_D35`: G32A mutation effect at day 35
-- `R403C_vs_Ctrl_D35`: R403C mutation effect at day 35  
-- `G32A_vs_Ctrl_D65`: G32A mutation effect at day 65
-- `R403C_vs_Ctrl_D65`: R403C mutation effect at day 65
-
-**Maturation Effects (Time Course Within Genotype)**
-- `Time_Ctrl`: Normal maturation trajectory (D65 vs D35 in controls)
-- `Time_G32A`: Maturation in G32A mutants
-- `Time_R403C`: Maturation in R403C mutants
-
-**Interaction Effects (Mutation-Specific Maturation Changes)**
-- `Maturation_G32A_specific`: G32A-specific alterations in maturation trajectory
-- `Maturation_R403C_specific`: R403C-specific alterations in maturation trajectory
-
-
-#### Statistical Methods
-- **Normalization**: TMM (Trimmed Mean of M-values)
-- **Differential expression**: limma-voom with empirical Bayes moderation
-- **Multiple testing correction**: Benjamini-Hochberg FDR
-- **Significance thresholds**: p < 0.05, |log2FC| > 1
-
-### Custom Functions and Scripts
-
-The analysis pipeline uses several custom functions located in `01_Scripts/R_scripts/`:
-
-
-#### `read_count_matrix.R` - Data Processing Function
-**File**: `01_Scripts/R_scripts/read_count_matrix.R`
-**Function:** `process_rnaseq_data()`
-
-**Purpose**: Integrates count matrix with sample metadata and creates analysis-ready DGEList object.
-
-**Key Features:**
-- Handles count matrix and metadata integration with flexible sample name matching
-- Performs low-expression gene filtering using `filterByExpr()`
-- Applies TMM normalization for library size differences
-- Creates properly structured DGEList object with sample annotations
-
-**Input**: Count matrix file, metadata CSV file
-**Output**: Normalized DGEList object with sample annotations
-
-**Usage:**
-```r
-DGE <- process_rnaseq_data(config$counts_file, config$metadata_file, annotate = FALSE)
-```
-
-#### `generate_vertical_volcanos.R` - Specialized Volcano Plot Generation
-**File**: `01_Scripts/R_scripts/generate_vertical_volcanos.R`
-**Function:** `generate_vertical_volcano_sets()`
-
-**Purpose**: Creates comprehensive volcano plot collections for systematic comparison across contrasts.
-
-**Key Features**:
-- Predefined contrast groupings for biological interpretation
-- Dual significance modes (p-value and FDR-based)
-- Optional gene highlighting (e.g., calcium signaling genes)
-- Multi-panel layout generation
-- Automated file organization and naming
-
-**Contrast Groupings**:
-- D35 comparisons (early timepoint effects)
-- D65 comparisons (late timepoint effects)
-- Combined disease vs control comparisons
-- Temporal effects within genotypes
-- Interaction effects (mutation-specific maturation changes)
-
-**Usage:**
-```r
-generate_vertical_volcano_sets(contrast_tables, config, highlight_calcium = TRUE)
-```
-
-#### `run_syngo_gsea.R` - Synaptic Gene Ontology Analysis
-
-**File**: `01_Scripts/R_scripts/run_syngo_gsea.R`
-**Function:** `run_syngo_gsea()`
-
-**Purpose**: Performs GSEA using the SynGO database for synapse-specific pathway analysis.
-
-**Key Operations**:
-- SynGO cellular component ontology integration
-- clusterProfiler GSEA execution with custom gene sets
-- Comprehensive visualization generation (dotplots, barplots, running sum plots)
-- Directional analysis (up/down regulated pathways)
-- Results serialization and structured output
-
-**Visualization Outputs**:
-- Combined and directional dotplots
-- NES (Normalized Enrichment Score) barplots
-- Faceted up/down regulation plots
-- Running sum plots for top pathways
-
-**Helper Function:** `syngo_gmt()`
-- Processes SynGO Excel files into TERM2GENE and TERM2NAME mappings
-- Handles GO domain filtering (CC = Cellular Component)
-- Cleans pathway descriptions for better visualization
-
-**Usage:**
-```r
-syngo_gsea_results[[contrast]] <- run_syngo_gsea(
-  tbl, contrast,
-  T2G = syngo_lists$T2G,
-  T2N = syngo_lists$T2N,
-  sample_annotation = annot
-)
-```
-
-#### `syngo_running_sum_plot.R` - Specialized GSEA Visualization
-**File**: `01_Scripts/R_scripts/syngo_running_sum_plot.R`
-**Function:** `syngo_running_sum_plot()`
-
-**Purpose**: Creates publication-ready running sum plots specifically optimized for SynGO GSEA results.
-
-**Key Features:**
-- Handles both SYNGO: and GO: prefixed pathway identifiers
-- Generates multi-panel running sum plots with:
-  - Enrichment score curves
-  - Gene hit locations
-  - Ranked gene list visualization
-- Applies consistent styling and color schemes
-- Truncates long pathway names for readability
-- Uses patchwork for professional multi-panel layout
-
-**Usage:**
-```r
-syngo_running_sum_plot(
-  gsea_obj = res, 
-  gene_set_ids = top5,
-  base_size = plot_par$font_size
-)
-```
-
-## Analysis Outputs
-
-The pipeline generates comprehensive outputs organized in `03_Results/02_Analysis/`:
-
-#### Differential Expression Results
-- **DE_results/**: CSV files with complete differential expression statistics for each contrast
-- **Plots/Volcano/**: Multiple volcano plot variants
-  - Standard p-value and FDR-based plots
-  - Vertical comparison panels
-  - Mean-difference (MD) plots
-  - Fold-change vs B-statistic plots
-- **Plots/Volcano/MD/**: Mean-difference plots for each contrast
-- **Plots/Volcano/FC-B/**: Fold-change vs B-statistic plots
-
-#### Quality Control and Overview
-- **Plots/General/**: Sample correlation heatmaps, MDS plots, DEG count summaries
-- **Summary/**: Analysis summary tables and optional HTML reports
-
-#### Pathway Analysis
-- **Plots/GSEA/**: MSigDB-based pathway analysis results for each contrast
-  - Hallmark pathways, GO Biological Process, GO Cellular Component
-  - Reactome and KEGG pathway databases
-  - Individual contrast subdirectories with comprehensive plot sets
-
-#### SynGO Analysis
-- **Plots/GSEA/[contrast]/SynGO/**: Synapse-specific pathway analysis
-  - Dotplots showing enriched synaptic processes
-  - Running sum plots for top pathways
-  - Directional analysis (up vs down regulated)
-
-#### Calcium Gene Analysis
-- **Calcium_genes/**: Focused analysis of calcium signaling genes
-  - Expression heatmaps across conditions
-  - Individual gene boxplots showing condition effects
-  - Differential expression results for calcium genes
-  - Volcano plots highlighting calcium genes
-
-## Technical Implementation
-
-#### Reproducible Workflow
-- Centralized configuration management
-- Robust path handling with here::here()
-- Automatic package installation and loading
-- Comprehensive error handling and logging
-
-## Reproducibility
-
-All analysis parameters are centralized in the configuration section of the main pipeline script. The workflow uses:
-- Consistent file path handling with `here::here()`
-- Automatic package installation and version checking
-- Comprehensive logging and error reporting
-- Structured output organization for easy navigation
-
-## Dependencies
-
-**Core Analysis**: edgeR, limma, dplyr, ggplot2, pheatmap, RColorBrewer, viridis
-**Pathway Analysis**: clusterProfiler, msigdbr, fgsea, org.Hs.eg.db
-**Visualization**: patchwork, UpSetR, VennDiagram, enrichplot
-**Utilities**: here, reshape2, readxl
-
-## Results
-
-The analysis pipeline generates multiple complementary views of the data:
-
-### Differential Expression Summary
-- **Baseline effects**: Direct comparison of mutants vs controls at each timepoint
-- **Maturation effects**: Time-course analysis within each genotype  
-- **Interaction effects**: Mutation-specific alterations in maturation trajectory
-
-### Pathway Analysis Insights
-- **MSigDB analysis**: Broad pathway coverage including Hallmark, GO, Reactome, KEGG
-- **SynGO analysis**: Synapse-specific processes and cellular components
-- **Custom gene sets**: Focused analysis of calcium signaling pathways
-
-### Visualization Outputs
-- **Quality control plots**: Sample relationships and batch effect assessment
-- **Volcano plots**: Multiple styles for different biological questions
-- **Pathway plots**: Comprehensive GSEA visualization suite
-- **Gene-specific analysis**: Calcium signaling gene expression patterns
-
-## Future Directions
-
-Potential extensions to the current analysis:
-
-1. **Transcription Factor Analysis**: Integration with decoupleR for TF activity inference
-2. **Network Analysis**: WGCNA for co-expression module identification
-3. **Integration Analysis**: Correlation with phenotypic measurements (mitochondrial length, Ca²⁺ dynamics)
-4. **Time Series Analysis**: More sophisticated temporal modeling approaches
-5. **Single Cell Integration**: If scRNA-seq data becomes available
+**See:** Individual folder READMEs for detailed file documentation
