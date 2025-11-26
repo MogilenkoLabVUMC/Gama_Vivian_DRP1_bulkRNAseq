@@ -238,11 +238,69 @@ cp .env.example .devcontainer/.env
 
 #### 1. Data Preprocessing
 
+**Upstream Processing (Alignment & Quantification):**
+
+Raw FASTQ files were processed using a standardized bulk RNA-seq pipeline ([bulkRNAseq_pipeline_scripts](https://github.com/tony-zhelonkin/bulkRNAseq_pipeline_scripts)) with tools version-locked at [scbio-docker v0.2.0](https://github.com/tony-zhelonkin/scbio-docker/tree/v0.2.0).
+
+**Reference genome:**
+- **Assembly:** GRCh38.p14 (hg38, GCF_000001405.40)
+- **Release date:** February 3, 2022
+- **Annotation:** GCF_000001405.40_GRCh38.p14_genomic.gff.gz
+
+**Reference preparation:**
+```bash
+# 1. Convert GTF to refFlat format
+./GTFtoRefFlat.sh -i GCF_000001405.40_GRCh38.p14_genomic.gtf.gz \
+                  -o GCF_000001405.40_GRCh38.p14_genomic.refflat
+
+# 2. Extract ribosomal intervals for QC
+./getRibosomalIntervals_from_gtf.sh \
+    -i GCF_000001405.40_GRCh38.p14_genomic.gtf.gz \
+    -r GCF_000001405.40_GRCh38.p14_genomic.fna.gz \
+    -o GCF_000001405.40_GRCh38.p14_genomic.ribosomal_intervals
+
+# 3. Convert GTF to BED12 format
+./GTFtoBED12.sh -i GCF_000001405.40_GRCh38.p14_genomic.gtf.gz \
+                -o GCF_000001405.40_GRCh38.p14_genomic.bed12
+
+# 4. Create ReSeQC-compatible BED
+./BEDtoRefSeqBED_human.sh -i GCF_000001405.40_GRCh38.p14_genomic.bed12 \
+                          -o GCF_000001405.40_GRCh38.p14_genomic.reseqc.bed12
+```
+
+**Alignment:**
+- **Software:** STAR (two-pass mode)
+- **Index generation:**
+```bash
+STAR --runMode genomeGenerate \
+     --runThreadN 8 \
+     --genomeDir ../ref_index100 \
+     --genomeFastaFiles ./GCF_000001405.40_GRCh38.p14_genomic.fna \
+     --sjdbGTFfile ./GCF_000001405.40_GRCh38.p14_genomic.gtf \
+     --sjdbOverhang 100
+```
+
+**Post-alignment QC:**
+- **Strand inference:** RSeQC `infer_experiment.py` (determined: non-stranded library)
+- **Alignment metrics:** Picard `CollectRnaSeqMetrics`, `MarkDuplicates`
+- **Read statistics:** samtools `flagstat`
+- **Comprehensive reporting:** MultiQC aggregation
+
+**Feature quantification:**
+- **Software:** featureCounts (Subread package)
+- **Parameters:**
+  - Feature type: exon
+  - Grouping attribute: gene_id
+  - Strandedness: 0 (unstranded)
+  - Mode: union (paired-end)
+  - Threads: 8
+- **Output:** Gene-level count matrix (`03_Results/01_Preprocessing/04_FeatureCounts/`)
+
 **Normalization:**
 - **Method:** TMM (Trimmed Mean of M-values) via edgeR
 - **Filtering:** filterByExpr() via edgeR
 - **Transformation:** edgeR::voomLmFit with sample.weights = FALSE
-- 
+-
 - voom log2-CPM with observation  weights
 
 **Quality Control:**
