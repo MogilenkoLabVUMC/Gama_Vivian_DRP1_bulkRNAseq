@@ -160,8 +160,7 @@ mitocarta_gsea_results <- load_or_compute(
           co,
           T2G = mitocarta_lists$T2G,
           T2N = mitocarta_lists$T2N,
-          sample_annotation = annot,
-          nperm = 10000,  # Reduced from 100k for faster computation during debug
+          #nperm = 100000,  # default 100000
           output_dir = gsea_out_dir
         )
       }, error = function(e) {

@@ -1,0 +1,96 @@
+==============================================================================
+MASTER GSVA TABLE SUMMARY
+==============================================================================
+
+Generated: 2025-11-25 20:52:43.050336
+
+--- MASTER TABLE (master_gsva_table.csv) ---
+Total rows: 42
+Columns: 22
+Modules: 7
+Genotypes: Ctrl, G32A, R403C
+Timepoints: D35, D65
+
+--- STATISTICAL TESTS ---
+Total comparisons (mutants vs controls): 28
+Significant comparisons (p.adj < 0.05): 0
+
+Significant comparisons by module:
+  Cytoplasmic_Translation: 0
+  Mito_Ribosome_Assembly: 0
+  Mitochondrial_Ribosome: 0
+  mtDNA_Maintenance: 0
+  OXPHOS: 0
+  Ribosome_Biogenesis: 0
+  Synaptic_Ribosomes: 0
+
+--- PATTERN SUMMARY (gsva_pattern_summary.csv) ---
+Modules analyzed: 7
+
+G32A patterns:
+  Complex: 6
+  Persistent: 1
+
+R403C patterns:
+  Complex: 2
+  Persistent: 4
+  Transient: 1
+
+Change consistency:
+  Consistent_Complex: 2
+  Consistent_Persistent: 1
+  Inconsistent_Complex_vs_Persistent: 3
+  Inconsistent_Complex_vs_Transient: 1
+
+--- MODULE GENE COUNTS ---
+  Ribosome Biogenesis (GO:BP): 158 genes
+  OXPHOS (MitoCarta): 139 genes
+  Mitochondrial Ribosome (MitoCarta):  77 genes
+  Cytoplasmic Translation (GO:BP):  76 genes
+  Synaptic Ribosomes (SynGO):  65 genes
+  mtDNA Maintenance (MitoCarta):  29 genes
+  Mito Ribosome Assembly (MitoCarta):  24 genes
+
+==============================================================================
+KEY COLUMNS IN MASTER TABLE:
+==============================================================================
+
+Identification:
+  - Module: Internal module key
+  - Display_Name: Human-readable module name
+  - Source_Database: Gene set source (GO:BP, SynGO, MitoCarta)
+
+GSVA Scores:
+  - Mean_GSVA: Mean GSVA enrichment score for this group
+  - SD_GSVA: Standard deviation
+  - SE_GSVA: Standard error
+
+Trajectory Metrics (relative to Ctrl D35 baseline):
+  - Baseline_CtrlD35: Control D35 baseline score
+  - Expression_vs_CtrlD35: Deviation from baseline
+
+Divergence Metrics (relative to matched control):
+  - Ctrl_Mean_Same_Day: Control mean at same timepoint
+  - Divergence_vs_Ctrl: Difference from control
+
+Statistical Tests:
+  - t_statistic: T-test statistic (mutant vs control)
+  - p_value: Raw p-value
+  - p_adjusted: Benjamini-Hochberg adjusted p-value
+  - significant: TRUE if p.adj < 0.05
+
+==============================================================================
+USAGE EXAMPLES:
+==============================================================================
+
+# Load in R:
+df <- read.csv('03_Results/02_Analysis/master_gsva_table.csv')
+
+# Find significant G32A changes at D65:
+df %>% filter(Genotype == 'G32A', Day == 65, significant == TRUE)
+
+# Compare trajectory patterns:
+df %>% filter(Module == 'OXPHOS') %>% 
+  select(Genotype, Day, Expression_vs_CtrlD35, Divergence_vs_Ctrl)
+
+==============================================================================
