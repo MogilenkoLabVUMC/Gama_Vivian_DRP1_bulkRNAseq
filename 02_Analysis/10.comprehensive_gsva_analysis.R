@@ -9,7 +9,7 @@
 ##           - SynGO pathways                                                ##
 ##           - ~12,000 pathways total                                        ##
 ##                                                                            ##
-##  OUTPUTS: - master_gsva_all_pathways.csv (comprehensive GSVA table)       ##
+##  OUTPUTS: - master_gsva_all_table.csv (comprehensive GSVA table)          ##
 ##           - gsva_all_pathways_checkpoint.rds (for reuse)                  ##
 ###############################################################################
 
@@ -502,7 +502,7 @@ message(sprintf("  ✓ Master table: %d rows × %d columns",
 
 message("\n💾 Exporting master GSVA table...")
 
-output_file <- file.path(config$out_root, "master_gsva_all_pathways.csv")
+output_file <- file.path(config$out_root, "master_gsva_all_table.csv")
 write.csv(master_gsva, output_file, row.names = FALSE)
 
 message(sprintf("  ✓ %s", basename(output_file)))

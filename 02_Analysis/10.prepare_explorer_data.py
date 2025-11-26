@@ -33,8 +33,8 @@ PROJECT_ROOT = Path(__file__).parent.parent
 DATA_DIR = PROJECT_ROOT / "03_Results" / "02_Analysis"
 OUTPUT_DIR = DATA_DIR / "Explorer"
 
-PATHWAY_FILE = DATA_DIR / "master_pathway_table.csv"
-GSVA_FILE = DATA_DIR / "master_gsva_all_pathways.csv"  # NEW comprehensive GSVA
+PATHWAY_FILE = DATA_DIR / "master_gsea_table.csv"
+GSVA_FILE = DATA_DIR / "master_gsva_all_table.csv"  # Comprehensive GSVA
 OUTPUT_HTML = OUTPUT_DIR / "DRP1_Pathway_Explorer.html"
 
 # CDN URLs for libraries (will be embedded)

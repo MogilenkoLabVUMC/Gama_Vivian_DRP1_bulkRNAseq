@@ -13,7 +13,7 @@ Creates a comprehensive master table of all pathways tested in GSEA analysis wit
 This table provides complete information for all pathways across all contrasts,
 enabling comprehensive downstream analysis and interpretation.
 
-Output: 03_Results/02_Analysis/master_pathway_table.csv
+Output: 03_Results/02_Analysis/master_gsea_table.csv
 """
 
 import sys
@@ -331,7 +331,7 @@ def main():
     print_summary_statistics(df_master)
 
     # Save master table
-    output_file = OUTPUT_DIR / 'master_pathway_table.csv'
+    output_file = OUTPUT_DIR / 'master_gsea_table.csv'
     df_master.to_csv(output_file, index=False)
 
     print("\n" + "="*80)

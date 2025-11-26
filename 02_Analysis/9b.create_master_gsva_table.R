@@ -7,7 +7,7 @@
 ##  INPUTS:  - GSVA checkpoint (gsva_module_scores.rds)                      ##
 ##           - QC variables checkpoint (for sample metadata)                 ##
 ##                                                                            ##
-##  OUTPUTS: - master_gsva_table.csv (comprehensive table for exploration)   ##
+##  OUTPUTS: - master_gsva_focused_table.csv (focused 7-module table)       ##
 ##           - gsva_statistics_summary.txt (summary statistics)              ##
 ###############################################################################
 
@@ -393,9 +393,9 @@ message(sprintf("  ✓ Pattern summary created: %d modules", nrow(pattern_summar
 message("\n💾 Exporting master tables...")
 
 # Export main master table (long format - one row per module-genotype-timepoint)
-master_file <- file.path(config$out_root, "master_gsva_table.csv")
+master_file <- file.path(config$out_root, "master_gsva_focused_table.csv")
 write.csv(master_table, master_file, row.names = FALSE)
-message(sprintf("  ✓ master_gsva_table.csv (%d rows × %d columns)",
+message(sprintf("  ✓ master_gsva_focused_table.csv (%d rows × %d columns)",
                 nrow(master_table), ncol(master_table)))
 
 # Export pattern summary (wide format - one row per module)
@@ -417,7 +417,7 @@ summary_text <- c(
   "",
   sprintf("Generated: %s", Sys.time()),
   "",
-  "--- MASTER TABLE (master_gsva_table.csv) ---",
+  "--- MASTER TABLE (master_gsva_focused_table.csv) ---",
   sprintf("Total rows: %d", nrow(master_table)),
   sprintf("Columns: %d", ncol(master_table)),
   sprintf("Modules: %d", length(unique(master_table$Module))),
@@ -500,7 +500,7 @@ summary_text <- c(
   "=" |> rep(78) |> paste(collapse = ""),
   "",
   "# Load in R:",
-  "df <- read.csv('03_Results/02_Analysis/master_gsva_table.csv')",
+  "df <- read.csv('03_Results/02_Analysis/master_gsva_focused_table.csv')",
   "",
   "# Find significant G32A changes at D65:",
   "df %>% filter(Genotype == 'G32A', Day == 65, significant == TRUE)",
