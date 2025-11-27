@@ -317,66 +317,191 @@ message(sprintf("  ✓ Master table created: %d rows × %d columns",
 # ============================================================================ #
 # 7. Create Wide-Format Summary for Pattern Analysis                          #
 # ============================================================================ #
+#
+# PATTERN CLASSIFICATION FRAMEWORK (aligned with pattern_definitions.py)
+# =====================================================================
+#
+# This implements the canonical 7-pattern classification system:
+#
+# - Compensation: Active adaptive response (TrajDev significant + opposes Early)
+# - Progressive: Active worsening (TrajDev significant + amplifies Early)
+# - Natural_worsening: Passive deterioration (TrajDev not significant + worsened)
+# - Natural_improvement: Passive recovery (TrajDev not significant + improved)
+# - Late_onset: Maturation-dependent (no Early defect, Late defect emerges)
+# - Transient: Developmental delay (strong Early defect, fully resolved)
+# - Complex: Multiphasic or inconsistent patterns
+#
+# Key concepts:
+# - Early = Divergence from control at D35
+# - Late = Divergence from control at D65
+# - TrajDev = Mutation-specific maturation = (D65_mut - D35_mut) - (D65_ctrl - D35_ctrl)
+#
+# GSVA-specific thresholds (scaled for typical GSVA score range):
+# - GSVA_EFFECT = 0.15 (equivalent to NES 0.5 - minimum effect size)
+# - GSVA_STRONG = 0.30 (equivalent to NES 1.0 - strong effect)
+# - IMPROVEMENT_RATIO = 0.7 (30% reduction)
+# - WORSENING_RATIO = 1.3 (30% increase)
 
 message("\n📊 Creating pattern summary table...")
+
+# Define GSVA-specific thresholds
+GSVA_EFFECT <- 0.15
+GSVA_STRONG <- 0.30
+IMPROVEMENT_RATIO <- 0.7
+WORSENING_RATIO <- 1.3
+P_SIGNIFICANT <- 0.05
+P_TRENDING <- 0.10
 
 # Pivot to wide format for easier pattern analysis
 pattern_summary <- master_table %>%
   filter(Genotype != "Ctrl") %>%
   select(Module, Display_Name, Source_Database, Genotype, Day,
-         Expression_vs_CtrlD35, Divergence_vs_Ctrl, significant) %>%
+         Expression_vs_CtrlD35, Divergence_vs_Ctrl, p_adjusted, significant) %>%
   pivot_wider(
     id_cols = c(Module, Display_Name, Source_Database),
     names_from = c(Genotype, Day),
-    values_from = c(Expression_vs_CtrlD35, Divergence_vs_Ctrl, significant),
+    values_from = c(Expression_vs_CtrlD35, Divergence_vs_Ctrl, p_adjusted, significant),
     names_sep = "_"
   )
 
-# Add pattern classifications based on trajectory
+# Calculate TrajDev for each mutation
+# TrajDev = (D65_mut - D35_mut) - (D65_ctrl - D35_ctrl)
+# Since Divergence_vs_Ctrl already subtracts control at same timepoint,
+# TrajDev can be calculated as: Divergence_D65 - Divergence_D35
 pattern_summary <- pattern_summary %>%
   mutate(
-    # G32A pattern
-    Pattern_G32A = case_when(
-      is.na(Expression_vs_CtrlD35_G32A_35) | is.na(Expression_vs_CtrlD35_G32A_65) ~ "Insufficient_data",
+    TrajDev_G32A = Divergence_vs_Ctrl_G32A_65 - Divergence_vs_Ctrl_G32A_35,
+    TrajDev_R403C = Divergence_vs_Ctrl_R403C_65 - Divergence_vs_Ctrl_R403C_35
+  )
 
-      # Compensation: starts down/neutral, ends up
-      Expression_vs_CtrlD35_G32A_35 <= 0 & Expression_vs_CtrlD35_G32A_65 > 0.2 ~ "Compensation",
+# Helper function to classify pattern for one mutation (aligned with Python)
+classify_gsva_pattern <- function(early_div, early_padj, trajdev, late_div, late_padj) {
+  # Handle missing values
+  if (is.na(early_div) | is.na(late_div)) {
+    return(list(pattern = "Insufficient_data", confidence = NA_character_))
+  }
 
-      # Progressive: starts up, gets more up
-      Expression_vs_CtrlD35_G32A_35 > 0 & Expression_vs_CtrlD35_G32A_65 > Expression_vs_CtrlD35_G32A_35 ~ "Progressive",
+  early_abs <- abs(early_div)
+  late_abs <- abs(late_div)
+  trajdev_abs <- abs(trajdev)
 
-      # Persistent: consistently dysregulated (same direction)
-      sign(Expression_vs_CtrlD35_G32A_35) == sign(Expression_vs_CtrlD35_G32A_65) &
-        abs(Expression_vs_CtrlD35_G32A_65 - Expression_vs_CtrlD35_G32A_35) < 0.1 ~ "Persistent",
+  # Default p-values to 1.0 if missing
+  if (is.na(early_padj)) early_padj <- 1.0
+  if (is.na(late_padj)) late_padj <- 1.0
 
-      # Transient: starts dysregulated, returns to baseline
-      abs(Expression_vs_CtrlD35_G32A_35) > 0.2 & abs(Expression_vs_CtrlD35_G32A_65) < 0.1 ~ "Transient",
+  # Step 1: Early defect assessment
+  early_sig_defect <- (early_padj < P_SIGNIFICANT) & (early_abs > GSVA_EFFECT)
+  early_trending <- (early_padj < P_TRENDING) & (early_abs > GSVA_EFFECT)
+  early_strong <- (early_padj < P_SIGNIFICANT) & (early_abs > GSVA_STRONG)
+  early_no_defect <- (early_padj >= P_TRENDING) | (early_abs <= GSVA_EFFECT)
 
-      # Natural worsening: starts up, ends down (or vice versa with worsening)
-      Expression_vs_CtrlD35_G32A_35 > 0 & Expression_vs_CtrlD35_G32A_65 < 0 ~ "Natural_worsening",
+  # Step 2: Late outcome assessment
+  late_sig_defect <- (late_padj < P_SIGNIFICANT) & (late_abs > GSVA_STRONG)
+  late_resolved <- late_abs < GSVA_EFFECT
 
-      TRUE ~ "Complex"
-    ),
+  # Improvement/worsening ratios
+  if (early_abs > 0.05) {
+    ratio <- late_abs / early_abs
+    improved <- (ratio < IMPROVEMENT_RATIO) | late_resolved
+    worsened <- ratio > WORSENING_RATIO
+  } else {
+    improved <- late_resolved
+    worsened <- late_abs > GSVA_STRONG
+  }
 
-    # R403C pattern (same logic)
-    Pattern_R403C = case_when(
-      is.na(Expression_vs_CtrlD35_R403C_35) | is.na(Expression_vs_CtrlD35_R403C_65) ~ "Insufficient_data",
+  # Step 3: TrajDev assessment (Active vs Passive)
+  # For GSVA, we don't have p-values for TrajDev directly
+  # Use magnitude threshold as proxy for "significant" trajectory change
+  trajdev_sig <- trajdev_abs > GSVA_EFFECT
 
-      Expression_vs_CtrlD35_R403C_35 <= 0 & Expression_vs_CtrlD35_R403C_65 > 0.2 ~ "Compensation",
+  # Direction assessment
+  if (early_abs > 0.05) {
+    trajdev_opposes <- sign(trajdev) != sign(early_div)
+    trajdev_amplifies <- sign(trajdev) == sign(early_div)
+  } else {
+    trajdev_opposes <- FALSE
+    trajdev_amplifies <- FALSE
+  }
 
-      Expression_vs_CtrlD35_R403C_35 > 0 & Expression_vs_CtrlD35_R403C_65 > Expression_vs_CtrlD35_R403C_35 ~ "Progressive",
+  # Step 4: Pattern classification (aligned with pattern_definitions.py)
+  # IMPORTANT: Order matters! Active patterns must be checked BEFORE Transient
 
-      sign(Expression_vs_CtrlD35_R403C_35) == sign(Expression_vs_CtrlD35_R403C_65) &
-        abs(Expression_vs_CtrlD35_R403C_65 - Expression_vs_CtrlD35_R403C_35) < 0.1 ~ "Persistent",
+  # Late_onset: no early defect, significant late defect
+  if (early_no_defect & late_sig_defect) {
+    return(list(pattern = "Late_onset", confidence = "High"))
+  }
 
-      abs(Expression_vs_CtrlD35_R403C_35) > 0.2 & abs(Expression_vs_CtrlD35_R403C_65) < 0.1 ~ "Transient",
+  # Patterns requiring early defect
+  if (early_sig_defect | early_trending) {
+    confidence <- ifelse(early_sig_defect, "High", "Medium")
 
-      Expression_vs_CtrlD35_R403C_35 > 0 & Expression_vs_CtrlD35_R403C_65 < 0 ~ "Natural_worsening",
+    # Active patterns (TrajDev significant) - check BEFORE Transient
+    # because significant opposing TrajDev indicates active compensation,
+    # not passive transient recovery
+    if (trajdev_sig & trajdev_opposes & improved) {
+      return(list(pattern = "Compensation", confidence = confidence))
+    }
 
-      TRUE ~ "Complex"
-    ),
+    if (trajdev_sig & trajdev_amplifies & worsened) {
+      return(list(pattern = "Progressive", confidence = confidence))
+    }
 
-    # Change consistency
+    # Transient: strong early defect, fully resolved, but NOT actively compensated
+    # (Must come AFTER active pattern checks)
+    if (early_strong & late_resolved) {
+      return(list(pattern = "Transient", confidence = "High"))
+    }
+
+    # Passive patterns (TrajDev not significant)
+    if (!trajdev_sig) {
+      if (improved) {
+        return(list(pattern = "Natural_improvement",
+                    confidence = ifelse(early_sig_defect, "High", "Medium")))
+      }
+      if (worsened) {
+        return(list(pattern = "Natural_worsening",
+                    confidence = ifelse(early_sig_defect, "High", "Medium")))
+      }
+    }
+  }
+
+  # Transient for cases without early_sig_defect but with strong early
+  # (edge case: early_trending but strong)
+  if (early_strong & late_resolved) {
+    return(list(pattern = "Transient", confidence = "High"))
+  }
+
+  return(list(pattern = "Complex", confidence = NA_character_))
+}
+
+# Apply pattern classification for each mutation
+pattern_summary <- pattern_summary %>%
+  rowwise() %>%
+  mutate(
+    # G32A classification
+    .result_G32A = list(classify_gsva_pattern(
+      Divergence_vs_Ctrl_G32A_35, p_adjusted_G32A_35,
+      TrajDev_G32A,
+      Divergence_vs_Ctrl_G32A_65, p_adjusted_G32A_65
+    )),
+    Pattern_G32A = .result_G32A$pattern,
+    Confidence_G32A = .result_G32A$confidence,
+
+    # R403C classification
+    .result_R403C = list(classify_gsva_pattern(
+      Divergence_vs_Ctrl_R403C_35, p_adjusted_R403C_35,
+      TrajDev_R403C,
+      Divergence_vs_Ctrl_R403C_65, p_adjusted_R403C_65
+    )),
+    Pattern_R403C = .result_R403C$pattern,
+    Confidence_R403C = .result_R403C$confidence
+  ) %>%
+  ungroup() %>%
+  select(-.result_G32A, -.result_R403C)
+
+# Add change consistency
+pattern_summary <- pattern_summary %>%
+  mutate(
     Change_Consistency = case_when(
       Pattern_G32A == Pattern_R403C ~ paste0("Consistent_", Pattern_G32A),
       Pattern_G32A != Pattern_R403C ~ paste0("Inconsistent_", Pattern_G32A, "_vs_", Pattern_R403C),
@@ -385,6 +510,21 @@ pattern_summary <- pattern_summary %>%
   )
 
 message(sprintf("  ✓ Pattern summary created: %d modules", nrow(pattern_summary)))
+
+# Report pattern distribution with confidence levels
+message("\n  Pattern distribution (High confidence only):")
+for (mutation in c("G32A", "R403C")) {
+  pattern_col <- paste0("Pattern_", mutation)
+  conf_col <- paste0("Confidence_", mutation)
+  high_conf <- pattern_summary[[conf_col]] == "High" & !is.na(pattern_summary[[conf_col]])
+  if (any(high_conf, na.rm = TRUE)) {
+    message(sprintf("    %s:", mutation))
+    counts <- table(pattern_summary[[pattern_col]][high_conf])
+    for (p in names(counts)) {
+      message(sprintf("      %s: %d", p, counts[p]))
+    }
+  }
+}
 
 # ============================================================================ #
 # 8. Export Master Tables                                                     #

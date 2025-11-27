@@ -29,6 +29,7 @@ warnings.filterwarnings('ignore')
 
 # Import project modules
 from Python.config import CONFIG, resolve_path
+from Python.pattern_definitions import add_pattern_classification
 
 # =============================================================================
 # SETUP
@@ -57,24 +58,37 @@ def load_gsea_results():
 
 
 def load_pattern_classifications():
-    """Load pattern classifications from pathways_classified.csv"""
-    print("\nLoading pattern classifications...")
+    """
+    Load trajectory data and recalculate patterns using canonical classification.
+
+    Uses add_pattern_classification from pattern_definitions.py to ensure
+    patterns are calculated consistently with Confidence columns.
+    """
+    print("\nLoading trajectory data for pattern classification...")
 
     pattern_file = resolve_path('03_Results/02_Analysis/Plots/Cross_database_validation/pathways_classified.csv')
     df_patterns = pd.read_csv(pattern_file)
 
-    print(f"  Loaded {len(df_patterns)} classified pathways")
+    print(f"  Loaded {len(df_patterns)} pathways")
 
-    # Select relevant columns for merging
-    pattern_cols = ['pathway_id', 'database', 'Description',
-                   'Pattern_G32A', 'Pattern_R403C',
-                   'NES_Early_G32A', 'NES_Early_R403C',
-                   'NES_Late_G32A', 'NES_Late_R403C',
-                   'NES_TrajDev_G32A', 'NES_TrajDev_R403C']
+    # Select columns needed for pattern classification
+    # Note: We load NES and p.adjust columns to recalculate patterns
+    data_cols = ['pathway_id', 'database', 'Description',
+                 'NES_Early_G32A', 'NES_Early_R403C',
+                 'NES_Late_G32A', 'NES_Late_R403C',
+                 'NES_TrajDev_G32A', 'NES_TrajDev_R403C',
+                 'p.adjust_Early_G32A', 'p.adjust_Early_R403C',
+                 'p.adjust_Late_G32A', 'p.adjust_Late_R403C',
+                 'p.adjust_TrajDev_G32A', 'p.adjust_TrajDev_R403C']
 
     # Only keep columns that exist
-    existing_cols = [col for col in pattern_cols if col in df_patterns.columns]
+    existing_cols = [col for col in data_cols if col in df_patterns.columns]
     df_patterns = df_patterns[existing_cols]
+
+    # Recalculate patterns using canonical classification function
+    # This adds Pattern_{mutation} and Confidence_{mutation} columns
+    print("\n  Recalculating patterns using canonical classification...")
+    df_patterns = add_pattern_classification(df_patterns, mutations=['G32A', 'R403C'])
 
     return df_patterns
 
@@ -136,7 +150,7 @@ def classify_change_consistency(row):
     # Different patterns
     else:
         # Check if one is more severe
-        severity_order = ['Insufficient_data', 'Complex', 'Persistent',
+        severity_order = ['Insufficient_data', 'Complex',
                          'Natural_improvement', 'Natural_worsening',
                          'Transient', 'Late_onset', 'Progressive', 'Compensation']
 
@@ -227,7 +241,9 @@ def create_master_table(df_long, df_patterns):
 
         # Pattern classifications
         'Pattern_G32A',
+        'Confidence_G32A',
         'Pattern_R403C',
+        'Confidence_R403C',
         'change_consistency',
 
         # Trajectory NES values (for reference)

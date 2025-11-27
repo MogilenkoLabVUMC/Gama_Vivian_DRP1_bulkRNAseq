@@ -2,9 +2,9 @@
 MASTER GSVA TABLE SUMMARY
 ==============================================================================
 
-Generated: 2025-11-25 20:52:43.050336
+Generated: 2025-11-26 19:33:40.855745
 
---- MASTER TABLE (master_gsva_table.csv) ---
+--- MASTER TABLE (master_gsva_focused_table.csv) ---
 Total rows: 42
 Columns: 22
 Modules: 7
@@ -28,19 +28,13 @@ Significant comparisons by module:
 Modules analyzed: 7
 
 G32A patterns:
-  Complex: 6
-  Persistent: 1
+  Complex: 7
 
 R403C patterns:
-  Complex: 2
-  Persistent: 4
-  Transient: 1
+  Complex: 7
 
 Change consistency:
-  Consistent_Complex: 2
-  Consistent_Persistent: 1
-  Inconsistent_Complex_vs_Persistent: 3
-  Inconsistent_Complex_vs_Transient: 1
+  Consistent_Complex: 7
 
 --- MODULE GENE COUNTS ---
   Ribosome Biogenesis (GO:BP): 158 genes
@@ -84,7 +78,7 @@ USAGE EXAMPLES:
 ==============================================================================
 
 # Load in R:
-df <- read.csv('03_Results/02_Analysis/master_gsva_table.csv')
+df <- read.csv('03_Results/02_Analysis/master_gsva_focused_table.csv')
 
 # Find significant G32A changes at D65:
 df %>% filter(Genotype == 'G32A', Day == 65, significant == TRUE)
