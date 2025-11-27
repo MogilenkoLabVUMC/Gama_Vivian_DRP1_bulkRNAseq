@@ -509,6 +509,25 @@ pattern_summary <- pattern_summary %>%
     )
   )
 
+# Add super-categories (simplified for main figures/text)
+# Mapping aligned with Python pattern_definitions.py
+super_category_map <- c(
+  "Compensation" = "Active_Compensation",
+  "Progressive" = "Active_Progression",
+  "Natural_improvement" = "Passive",
+  "Natural_worsening" = "Passive",
+  "Late_onset" = "Late_onset",
+  "Transient" = "Other",
+  "Complex" = "Other",
+  "Insufficient_data" = "Insufficient_data"
+)
+
+pattern_summary <- pattern_summary %>%
+  mutate(
+    Super_Category_G32A = super_category_map[Pattern_G32A],
+    Super_Category_R403C = super_category_map[Pattern_R403C]
+  )
+
 message(sprintf("  ✓ Pattern summary created: %d modules", nrow(pattern_summary)))
 
 # Report pattern distribution with confidence levels

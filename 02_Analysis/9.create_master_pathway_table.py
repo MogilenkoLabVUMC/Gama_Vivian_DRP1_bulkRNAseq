@@ -29,7 +29,7 @@ warnings.filterwarnings('ignore')
 
 # Import project modules
 from Python.config import CONFIG, resolve_path
-from Python.pattern_definitions import add_pattern_classification
+from Python.pattern_definitions import add_pattern_classification, add_super_category_columns
 
 # =============================================================================
 # SETUP
@@ -89,6 +89,10 @@ def load_pattern_classifications():
     # This adds Pattern_{mutation} and Confidence_{mutation} columns
     print("\n  Recalculating patterns using canonical classification...")
     df_patterns = add_pattern_classification(df_patterns, mutations=['G32A', 'R403C'])
+
+    # Add super-category columns for simplified analysis
+    print("\n  Adding super-category columns...")
+    df_patterns = add_super_category_columns(df_patterns, mutations=['G32A', 'R403C'])
 
     return df_patterns
 
@@ -242,8 +246,10 @@ def create_master_table(df_long, df_patterns):
         # Pattern classifications
         'Pattern_G32A',
         'Confidence_G32A',
+        'Super_Category_G32A',
         'Pattern_R403C',
         'Confidence_R403C',
+        'Super_Category_R403C',
         'change_consistency',
 
         # Trajectory NES values (for reference)
@@ -306,6 +312,21 @@ def print_summary_statistics(df_master):
         print("\nR403C patterns (unique pathways):")
         for pattern, count in r403c_patterns.head(10).items():
             print(f"  {pattern}: {count}")
+
+    print("\n--- Super-category distribution ---")
+    if 'Super_Category_G32A' in df_master.columns:
+        g32a_super = df_master.drop_duplicates('pathway_id')['Super_Category_G32A'].value_counts()
+        print("\nG32A super-categories (unique pathways):")
+        for cat, count in g32a_super.items():
+            pct = count / df_master['pathway_id'].nunique() * 100
+            print(f"  {cat}: {count} ({pct:.1f}%)")
+
+    if 'Super_Category_R403C' in df_master.columns:
+        r403c_super = df_master.drop_duplicates('pathway_id')['Super_Category_R403C'].value_counts()
+        print("\nR403C super-categories (unique pathways):")
+        for cat, count in r403c_super.items():
+            pct = count / df_master['pathway_id'].nunique() * 100
+            print(f"  {cat}: {count} ({pct:.1f}%)")
 
     print("\n--- Change consistency ---")
     if 'change_consistency' in df_master.columns:

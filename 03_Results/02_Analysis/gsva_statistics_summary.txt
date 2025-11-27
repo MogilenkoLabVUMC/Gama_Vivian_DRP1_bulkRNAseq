@@ -2,7 +2,7 @@
 MASTER GSVA TABLE SUMMARY
 ==============================================================================
 
-Generated: 2025-11-26 19:33:40.855745
+Generated: 2025-11-26 20:39:24.607233
 
 --- MASTER TABLE (master_gsva_focused_table.csv) ---
 Total rows: 42

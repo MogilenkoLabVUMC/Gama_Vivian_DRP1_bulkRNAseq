@@ -59,6 +59,55 @@ GSVA_STRONG = 0.30           # Equivalent to NES 1.0
 
 
 # =============================================================================
+# SUPER-CATEGORY MAPPING (Simplified for main figures/text)
+# =============================================================================
+#
+# The 7-pattern system provides detailed trajectory classification, but for
+# main text interpretation, a simpler 5-category system is often more useful.
+#
+# Super-categories:
+# - Active_Compensation: Patterns with significant TrajDev opposing early defects
+# - Active_Progression: Patterns with significant TrajDev amplifying defects (rare)
+# - Passive: Recovery/worsening without active TrajDev involvement
+# - Late_onset: Maturation-dependent dysfunction (biologically distinct)
+# - Other: Transient, Complex patterns
+#
+# Usage: Main figures use super-categories; detailed 7-pattern taxonomy reserved
+# for Methods section and Supplementary materials.
+
+SUPER_CATEGORY_MAP = {
+    'Compensation': 'Active_Compensation',
+    'Progressive': 'Active_Progression',
+    'Natural_improvement': 'Passive',
+    'Natural_worsening': 'Passive',
+    'Late_onset': 'Late_onset',
+    'Transient': 'Other',
+    'Complex': 'Other',
+    'Insufficient_data': 'Insufficient_data'
+}
+
+# Colors for super-categories (colorblind-safe)
+SUPER_CATEGORY_COLORS = {
+    'Active_Compensation': '#009E73',  # Bluish green - good outcome
+    'Active_Progression': '#D55E00',   # Vermillion - worsening
+    'Passive': '#56B4E9',              # Sky blue - neutral
+    'Late_onset': '#CC79A7',           # Reddish purple - maturation-dependent
+    'Other': '#999999',                # Gray
+    'Insufficient_data': '#DDDDDD'     # Light gray
+}
+
+# Order for plotting
+SUPER_CATEGORY_ORDER = [
+    'Active_Compensation',
+    'Active_Progression',
+    'Passive',
+    'Late_onset',
+    'Other',
+    'Insufficient_data'
+]
+
+
+# =============================================================================
 # PATTERN DEFINITIONS (for documentation and export)
 # =============================================================================
 
@@ -451,3 +500,125 @@ def get_potential_counts(df: pd.DataFrame, mutation: str) -> pd.Series:
     """
     mask = df[f'Confidence_{mutation}'].isin(['High', 'Medium'])
     return df.loc[mask, f'Pattern_{mutation}'].value_counts()
+
+
+# =============================================================================
+# SUPER-CATEGORY FUNCTIONS
+# =============================================================================
+
+def get_super_category(pattern: str) -> str:
+    """
+    Map a detailed pattern to its super-category.
+
+    Parameters
+    ----------
+    pattern : str
+        One of the 7 pattern names (Compensation, Progressive, etc.)
+
+    Returns
+    -------
+    str
+        Super-category name (Active_Compensation, Active_Progression,
+        Passive, Late_onset, Other, or Insufficient_data)
+    """
+    return SUPER_CATEGORY_MAP.get(pattern, 'Other')
+
+
+def add_super_category_columns(
+    df: pd.DataFrame,
+    mutations: Optional[list] = None
+) -> pd.DataFrame:
+    """
+    Add Super_Category columns based on existing Pattern columns.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame with Pattern_{mutation} columns
+    mutations : list, optional
+        Mutations to process. Default: ['G32A', 'R403C']
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with added Super_Category_{mutation} columns
+    """
+    if mutations is None:
+        mutations = ['G32A', 'R403C']
+
+    df = df.copy()
+
+    for mutation in mutations:
+        pattern_col = f'Pattern_{mutation}'
+        super_col = f'Super_Category_{mutation}'
+
+        if pattern_col in df.columns:
+            df[super_col] = df[pattern_col].map(SUPER_CATEGORY_MAP).fillna('Other')
+
+            # Print summary
+            super_counts = df[super_col].value_counts()
+            print(f"\n{mutation} super-category distribution:")
+            for cat in SUPER_CATEGORY_ORDER:
+                if cat in super_counts.index:
+                    count = super_counts[cat]
+                    pct = count / len(df) * 100
+                    print(f"  {cat}: {count} ({pct:.1f}%)")
+
+    return df
+
+
+def get_super_category_colors() -> Dict[str, str]:
+    """
+    Get colorblind-safe colors for each super-category.
+
+    Returns
+    -------
+    dict
+        Mapping of super-category name to hex color code
+    """
+    return SUPER_CATEGORY_COLORS.copy()
+
+
+def get_super_category_order() -> list:
+    """
+    Get the standard plotting order for super-categories.
+
+    Returns
+    -------
+    list
+        Ordered list of super-category names
+    """
+    return SUPER_CATEGORY_ORDER.copy()
+
+
+def get_super_category_summary(df: pd.DataFrame, mutation: str) -> pd.DataFrame:
+    """
+    Get summary statistics for super-categories.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame with Pattern and Super_Category columns
+    mutation : str
+        Mutation name (G32A or R403C)
+
+    Returns
+    -------
+    pd.DataFrame
+        Summary with counts and percentages per super-category
+    """
+    super_col = f'Super_Category_{mutation}'
+
+    if super_col not in df.columns:
+        df = add_super_category_columns(df, mutations=[mutation])
+
+    counts = df[super_col].value_counts()
+    total = len(df)
+
+    summary = pd.DataFrame({
+        'Super_Category': SUPER_CATEGORY_ORDER,
+        'Count': [counts.get(cat, 0) for cat in SUPER_CATEGORY_ORDER],
+        'Percentage': [counts.get(cat, 0) / total * 100 for cat in SUPER_CATEGORY_ORDER]
+    })
+
+    return summary[summary['Count'] > 0]

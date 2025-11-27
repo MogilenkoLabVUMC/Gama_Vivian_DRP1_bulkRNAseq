@@ -30,6 +30,27 @@ A **significant TrajDev** indicates that the mutant's maturation actively differ
 - **Active Progression:** Defects compound through active maladaptive responses
 - **Passive Changes:** Defects follow normal developmental buffering without active response
 
+## Super-Category System (Simplified)
+
+For main text interpretation, patterns are grouped into 5 super-categories:
+
+| Super-Category | Includes | Use Case |
+|----------------|----------|----------|
+| **Active_Compensation** | Compensation | Main narrative - active adaptive responses |
+| **Active_Progression** | Progressive | Main narrative - active worsening (rare in data) |
+| **Passive** | Natural_improvement, Natural_worsening | Main narrative - developmental buffering |
+| **Late_onset** | Late_onset | Maturation-dependent effects |
+| **Other** | Transient, Complex | Requires individual inspection |
+
+**Usage:**
+- Main figures and text: Use super-categories for clearer narrative
+- Detailed analysis: Use full 7-pattern taxonomy
+- Methods/Supplements: Document both levels
+
+**Implementation:** See `pattern_definitions.py` for `SUPER_CATEGORY_MAP` and `add_super_category_columns()`.
+
+---
+
 ## Pattern Definitions
 
 ### The 7-Pattern Classification System
@@ -200,6 +221,14 @@ Before finalizing pattern classifications:
 - [ ] Compare High vs High+Medium counts for sensitivity
 - [ ] Cross-validate key findings across multiple databases
 
+## Important Note: Descriptive Classification
+
+This pattern classification system is **descriptive**, not inferential. Patterns summarize trajectory dynamics using pre-defined criteria—they do not represent formal statistical hypothesis tests comparing pattern frequencies or testing whether a pathway "belongs to" one pattern versus another.
+
+Claims about pathway trajectories will need validation, and would need to show the underlying trajectory data to allow visual verification.
+
+---
+
 ## Methods Section Template
 
 > Pathway enrichment patterns were classified using a significance-based trajectory framework that distinguishes active adaptive responses from passive developmental changes. Classification required both statistical significance (p.adjust < 0.05 for High confidence, p.adjust < 0.10 for Medium confidence) and biological effect size (|NES| > 0.5). Seven mutually exclusive patterns were defined based on three trajectory stages: Early (mutation effect at Day 35), TrajDev (mutation-specific deviation from control maturation trajectory), and Late (mutation effect at Day 65).
@@ -214,6 +243,7 @@ Before finalizing pattern classifications:
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2025-11-26 | 1.1 | Added super-category system; added descriptive classification note |
 | 2025-11-26 | 1.0 | Initial canonical definitions with significance requirements |
 
 ---
