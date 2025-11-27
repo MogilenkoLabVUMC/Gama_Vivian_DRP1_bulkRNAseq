@@ -51,16 +51,17 @@ SEMANTIC_COLORS = {
 }
 
 # Pattern colors for trajectory classification (colorblind-safe Wong palette)
+# IMPORTANT: Canonical pattern definitions are in pattern_definitions.py
+# These colors must match the 7-pattern system defined there.
 PATTERN_COLORS = {
-    'Compensation': '#009E73',      # Bluish green - good outcome
-    'Progressive': '#D55E00',       # Vermillion - worsening
-    'Natural_worsening': '#E69F00', # Orange - passive worsening
-    'Natural_improvement': '#56B4E9',# Sky blue - passive improvement
-    'Late_onset': '#CC79A7',        # Reddish purple
-    'Transient': '#0072B2',         # Blue
-    'Persistent': '#999999',        # Gray
-    'Complex': '#F0E442',           # Yellow
-    'Insufficient_data': '#DDDDDD', # Light gray
+    'Compensation': '#009E73',       # Bluish green - active adaptive response
+    'Progressive': '#D55E00',        # Vermillion - active worsening
+    'Natural_worsening': '#E69F00',  # Orange - passive deterioration
+    'Natural_improvement': '#56B4E9', # Sky blue - passive recovery
+    'Late_onset': '#CC79A7',         # Reddish purple - maturation-dependent
+    'Transient': '#0072B2',          # Blue - developmental delay resolved
+    'Complex': '#F0E442',            # Yellow - multiphasic/inconsistent
+    'Insufficient_data': '#DDDDDD',  # Light gray - missing data
 }
 
 # Mutation colors (colorblind-safe)
