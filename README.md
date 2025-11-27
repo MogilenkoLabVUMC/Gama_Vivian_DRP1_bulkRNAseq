@@ -467,6 +467,28 @@ This project utilized AI tools to accelerate analysis pipeline development, biol
 
 **Transparency:** Analysis scripts, custom agent definitions (`.claude/agents/`), and project instructions (`CLAUDE.md`) are version-controlled, and committed to the repo for reproducibility .
 
+## Documentation
+
+### Quick Start
+- **[SETUP.md](SETUP.md)** - Quick setup guide (post-migration)
+- **[INSTALL.md](INSTALL.md)** - Detailed installation instructions
+
+### Analysis Reference
+- **[CLAUDE.md](CLAUDE.md)** - Claude Code instructions, architecture, troubleshooting
+- **[02_Analysis/SCRIPTS.md](02_Analysis/SCRIPTS.md)** - Complete script inventory
+
+### Scientific Documentation
+See **[docs/](docs/)** directory for:
+- **[Biological Research](docs/BIOLOGICAL_RESEARCH.md)** - Literature review and mechanistic model
+- **[Biological Context](docs/biological_context.md)** - Additional biological context and interpretation
+- **[CHANGELOG](docs/CHANGELOG.md)** - Analysis improvements since v1.0
+- **[Migration Notes](docs/MIGRATION.md)** - Technical migration details
+- **[Documentation Index](docs/README.md)** - Complete documentation map
+
+### Results Documentation
+- **[Results README](03_Results/02_Analysis/README.md)** - Analysis results overview and master tables documentation
+- **[Plot READMEs](03_Results/02_Analysis/Plots/)** - Individual visualization guides
+
 ### Data Availability
 
 **Input data:**

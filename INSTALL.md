@@ -1,5 +1,7 @@
 # Installation Guide
 
+> **Note**: For a quick-start guide without detailed explanations, see [SETUP.md](SETUP.md).
+
 This guide provides instructions for setting up the environment to reproduce the DRP1 bulk RNA-seq analysis.
 
 ## Prerequisites

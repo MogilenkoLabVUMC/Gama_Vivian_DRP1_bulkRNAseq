@@ -1,5 +1,7 @@
 # Quick Setup Guide
 
+> **Note**: This is a quick-start guide. For detailed installation instructions including Docker image build, package troubleshooting, and reproducibility details, see [INSTALL.md](INSTALL.md).
+
 Step-by-step instructions to get started with the migrated GVDRP1 bulk RNA-seq analysis repository after migration
 
 ## Prerequisites
