@@ -252,6 +252,16 @@ This paradox explains the **developmental epilepsy phenotype**:
 - **Critical_period_trajectories/**: GSVA-based temporal modeling of pathway dynamics
 - **Publication_Figures/**: Integrated multi-panel figures for manuscript
 
+## Related Visualizations
+
+See also:
+- [../Publication_Figures/](../Publication_Figures/README.md) - Main manuscript figures
+- [../Publication_Figures_Dotplot/](../Publication_Figures_Dotplot/README_DOTPLOT_VERSION.md) - Alternative dotplot versions
+- [../Mito_translation_cascade/](../Mito_translation_cascade/README.md) - Mitochondrial compensation cascade
+- [../Synaptic_ribosomes/](../Synaptic_ribosomes/README.md) - Synaptic translation deep-dive
+- [../Critical_period_trajectories/](../Critical_period_trajectories/README.md) - GSVA temporal trajectories
+- [../Cross_database_validation/](../Cross_database_validation/README.md) - Pattern validation across databases
+
 ## Notes
 
 - The paradox is strongest in the **TrajDev** (maturation) contrast, indicating this is a developmental phenomenon

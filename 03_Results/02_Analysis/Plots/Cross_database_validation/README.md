@@ -14,17 +14,25 @@ This folder contains cross-database GSEA validation analysis that classifies pat
 
 ## Pattern Classification Framework
 
-Pathways are classified into temporal patterns based on their enrichment across three developmental stages:
+**Canonical Reference:** `01_Scripts/Python/pattern_definitions.py`
+**Full Documentation:** `docs/PATTERN_CLASSIFICATION.md`
 
-| Pattern | Definition | Biological Interpretation |
-|---------|------------|--------------------------|
-| **Compensation** | Early disruption (D35) followed by recovery (D65) | Adaptive response; system compensates for mutation effects |
-| **Progressive** | Gradual worsening from D35 to D65 | Cumulative damage; deficits worsen with maturation |
-| **Transient** | Disruption only at D35, resolved by D65 | Transient developmental delay |
-| **Late_onset** | Normal at D35, disrupted at D65 | Maturation-dependent dysfunction |
-| **Natural_improvement** | D35 and D65 both improved | Enhanced pathway activity at both timepoints |
-| **Natural_worsening** | D35 and D65 both disrupted | Persistent pathway dysfunction |
-| **Complex** | Inconsistent patterns across comparisons | Mixed or non-linear effects |
+Pathways are classified into temporal patterns based on their enrichment across three developmental stages (Early, TrajDev, Late). The key distinction is between **active** patterns (requiring significant trajectory deviation) and **passive** patterns (following normal developmental buffering):
+
+| Pattern | Active? | Criteria | Biological Interpretation |
+|---------|---------|----------|---------------------------|
+| **Compensation** | Active | Early defect + TrajDev significant opposing + Late improved | Adaptive plasticity; system actively compensates |
+| **Progressive** | Active | Early defect + TrajDev significant amplifying + Late worsened | Active maladaptive transcriptional response |
+| **Natural_worsening** | Passive | Early defect + TrajDev NS + Late worsened | Passive deterioration; lacks adaptive capacity |
+| **Natural_improvement** | Passive | Early defect + TrajDev NS + Late improved | Passive recovery; normal developmental buffering |
+| **Late_onset** | - | No Early defect + Late defect emerges | Maturation-dependent vulnerability |
+| **Transient** | - | Strong Early defect + Late fully resolved | Developmental delay that recovers |
+| **Complex** | - | Does not fit other patterns | Non-linear or multiphasic dynamics |
+
+**Key thresholds:**
+- Significance: p.adjust < 0.05 (High confidence), < 0.10 (Medium confidence)
+- Effect size: |NES| > 0.5 (minimum), |NES| > 1.0 (strong)
+- Improvement: |Late|/|Early| < 0.7; Worsening: |Late|/|Early| > 1.3
 
 ## Plots Generated
 
@@ -111,17 +119,24 @@ Aggregated counts of pathways per pattern, database, and mutation.
 - **Permutations**: 10,000
 - **Min/max gene set size**: 15-500 genes
 
-**Pattern Classification Algorithm**:
-1. Extract NES and FDR for each pathway across Early, TrajDev, and Late contrasts
-2. Determine directionality (UP/DOWN/NS) for each stage based on NES sign and FDR < 0.05
-3. Apply decision tree:
-   - Early DOWN + Late DOWN + TrajDev UP → **Compensation**
-   - Early DOWN + Late DOWN → **Progressive**
-   - Early DOWN + Late NS → **Transient**
-   - Early NS + Late DOWN → **Late_onset**
-   - Early UP + Late UP → **Natural_improvement**
-   - Early DOWN + Late DOWN (both stages affected) → **Natural_worsening**
+**Pattern Classification Algorithm** (see `docs/PATTERN_CLASSIFICATION.md` for full details):
+
+The algorithm distinguishes **active** patterns (significant TrajDev) from **passive** patterns:
+
+1. Extract NES and p.adjust for each pathway across Early, TrajDev, and Late contrasts
+2. Assess defect significance (requires BOTH p.adjust < 0.05 AND |NES| > 0.5)
+3. Assess outcome change (improvement: |Late|/|Early| < 0.7; worsening: > 1.3)
+4. Assess TrajDev activity (significant: p.adjust < 0.05 AND |NES| > 0.5)
+5. Apply classification rules:
+   - Early defect + TrajDev sig opposing + Late improved → **Compensation** (active)
+   - Early defect + TrajDev sig amplifying + Late worsened → **Progressive** (active)
+   - Early defect + TrajDev NS + Late improved → **Natural_improvement** (passive)
+   - Early defect + TrajDev NS + Late worsened → **Natural_worsening** (passive)
+   - No Early defect + Late strong defect → **Late_onset**
+   - Strong Early defect + Late resolved → **Transient**
    - Inconsistent patterns → **Complex**
+
+Classifications include confidence levels: High (p < 0.05) and Medium (0.05 ≤ p < 0.10).
 
 **Statistical Testing**:
 - Individual pathway significance: FDR-corrected p-values from GSEA
@@ -183,6 +198,16 @@ The cross-database consistency supports three major conclusions:
 - **Mito_translation_cascade/**: Mechanistic analysis of mitochondria → translation → synapse cascade
 - **Critical_period_trajectories/**: GSVA-based temporal trajectory modeling
 - **Publication_Figures/**: Integrated multi-panel figures for manuscript
+
+## Related Visualizations
+
+See also:
+- [../Publication_Figures/](../Publication_Figures/README.md) - Main manuscript figures
+- [../Ribosome_paradox/](../Ribosome_paradox/README.md) - Core translation paradox finding
+- [../Mito_translation_cascade/](../Mito_translation_cascade/README.md) - Mechanistic cascade visualization
+- [../Synaptic_ribosomes/](../Synaptic_ribosomes/README.md) - Synaptic translation deep-dive
+- [../Critical_period_trajectories/](../Critical_period_trajectories/README.md) - GSVA temporal analysis
+- [../Pattern_Summary_Normalized/](../Pattern_Summary_Normalized/README.md) - Normalized pattern visualizations
 
 ## Notes
 

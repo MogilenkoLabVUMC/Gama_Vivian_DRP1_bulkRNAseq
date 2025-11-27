@@ -203,6 +203,16 @@ These are candidate therapeutic targets or biomarkers.
 - **Cross_database_validation/**: SynGO validation across other databases
 - **Publication_Figures/**: Integrated multi-panel figures
 
+## Related Visualizations
+
+See also:
+- [../Publication_Figures/](../Publication_Figures/README.md) - Main manuscript figures
+- [../Ribosome_paradox/](../Ribosome_paradox/README.md) - Core ribosome downregulation finding
+- [../Mito_translation_cascade/](../Mito_translation_cascade/README.md) - Energy-translation-synapse cascade
+- [../Critical_period_trajectories/](../Critical_period_trajectories/README.md) - GSVA temporal trajectories
+- [../Cross_database_validation/](../Cross_database_validation/README.md) - Pattern validation framework
+- [../Publication_Figures_Dotplot/](../Publication_Figures_Dotplot/README_DOTPLOT_VERSION.md) - Alternative dotplot visualizations
+
 ## Notes
 
 - SynGO annotations are based on experimental evidence from synaptic proteomics and imaging studies

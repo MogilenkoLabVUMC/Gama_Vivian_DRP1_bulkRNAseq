@@ -217,6 +217,16 @@ The heatmap reveals how dysfunction propagates through the cascade:
 - **Synaptic_ribosomes/**: Detailed synaptic translation analysis
 - **Publication_Figures/**: Integrated figures for manuscript
 
+## Related Visualizations
+
+See also:
+- [../Publication_Figures/](../Publication_Figures/README.md) - Main manuscript figures
+- [../Ribosome_paradox/](../Ribosome_paradox/README.md) - Core translation paradox finding
+- [../Synaptic_ribosomes/](../Synaptic_ribosomes/README.md) - Synaptic translation analysis
+- [../Critical_period_trajectories/](../Critical_period_trajectories/README.md) - GSVA temporal analysis
+- [../Cross_database_validation/](../Cross_database_validation/README.md) - Cross-database pattern validation
+- [../Complex_V_analysis/](../Complex_V_analysis/README.md) - ATP synthase (Complex V) deep-dive
+
 ## Notes
 
 - Module assignments are based on expert curation, not clustering

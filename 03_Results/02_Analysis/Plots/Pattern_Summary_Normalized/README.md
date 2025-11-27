@@ -215,6 +215,15 @@ python3 02_Analysis/8.pattern_summary_normalized.py
 
 ---
 
+## Related Visualizations
+
+See also:
+- [../Publication_Figures/](../Publication_Figures/README.md) - Main manuscript figures
+- [../Cross_database_validation/](../Cross_database_validation/README.md) - Pattern validation (original)
+- [../Ribosome_paradox/](../Ribosome_paradox/README.md) - Core ribosome downregulation finding
+- [../Mito_translation_cascade/](../Mito_translation_cascade/README.md) - Mechanistic cascade visualization
+- [../Critical_period_trajectories/](../Critical_period_trajectories/README.md) - GSVA temporal trajectories
+
 ## Related Documentation
 
 - Original pattern summary: `../Cross_database_validation/README.md`

@@ -166,12 +166,16 @@ All figures include:
 - Sample sizes in figure legends
 - Confidence intervals or error bars where appropriate
 
-## Related Analyses
+## Related Visualizations
 
-- **Ribosome_paradox/**: Source data and detailed analysis
-- **Cross_database_validation/**: Pattern classification methodology
-- **Mito_translation_cascade/**: Mechanistic cascade details
-- **Critical_period_trajectories/**: Temporal trajectory modeling
+See also:
+- [../Publication_Figures_Dotplot/](../Publication_Figures_Dotplot/README_DOTPLOT_VERSION.md) - Alternative dotplot visualizations
+- [../Ribosome_paradox/](../Ribosome_paradox/README.md) - Core ribosome downregulation finding (detailed analysis)
+- [../Cross_database_validation/](../Cross_database_validation/README.md) - Pattern classification methodology
+- [../Mito_translation_cascade/](../Mito_translation_cascade/README.md) - Mechanistic cascade deep-dive
+- [../Critical_period_trajectories/](../Critical_period_trajectories/README.md) - GSVA temporal trajectory analysis
+- [../Synaptic_ribosomes/](../Synaptic_ribosomes/README.md) - Pre/postsynaptic translation analysis
+- [../Pattern_Summary_Normalized/](../Pattern_Summary_Normalized/README.md) - Pattern classification visualizations
 
 ## File Naming Convention
 

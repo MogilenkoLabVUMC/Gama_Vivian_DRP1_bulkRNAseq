@@ -132,6 +132,16 @@ Publication_Figures/
 - When you want to highlight specific significant pathways
 - Standard in pathway enrichment publications
 
+## Related Visualizations
+
+See also:
+- [../Publication_Figures/](../Publication_Figures/README.md) - Original heatmap versions (main manuscript)
+- [../Ribosome_paradox/](../Ribosome_paradox/README.md) - Core ribosome downregulation finding
+- [../Mito_translation_cascade/](../Mito_translation_cascade/README.md) - Mechanistic cascade visualization
+- [../Synaptic_ribosomes/](../Synaptic_ribosomes/README.md) - Synaptic translation deep-dive
+- [../Critical_period_trajectories/](../Critical_period_trajectories/README.md) - GSVA temporal trajectories
+- [../Cross_database_validation/](../Cross_database_validation/README.md) - Pattern validation framework
+
 ## Notes
 
 - Both versions use the same colorblind-safe Blue-White-Orange palette
