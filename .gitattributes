@@ -2,3 +2,7 @@
 03_Results/01_Preprocessing/* linguist-vendored
 *.R linguist-language=R
 *.Rmd linguist-language=R
+*.py linguist-language=Python
+
+# Exclude large generated HTML outputs from language stats
+03_Results/**/*.html linguist-vendored
