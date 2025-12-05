@@ -6,7 +6,7 @@ Mechanistic visualization of the energy → translation → synapse cascade that
 
 ## Generating Script
 
-- **Script**: `02_Analysis/viz_mito_translation_cascade.R`
+- **Script**: `02_Analysis/2.2.viz_mito_translation_cascade.R`
 - **Runtime**: ~2-3 minutes
 - **Dependencies**:
   - `03_Results/02_Analysis/checkpoints/all_gsea_results.rds`
@@ -77,7 +77,7 @@ Network Hyperexcitability (Epilepsy phenotype)
 **Interpretation**:
 - **Energy module**: Shows compensation pattern (Early down, TrajDev up)
 - **Translation module**: Mixed signals (biogenesis vs function paradox)
-- **Synapse module**: Persistent dysfunction (no compensation)
+- **Synapse module**: Sustained dysfunction (no compensation)
 
 ## Module Definitions
 
@@ -131,7 +131,7 @@ Network Hyperexcitability (Epilepsy phenotype)
 
 **Biological interpretation**:
 - Measures synaptic integrity and function
-- Persistent downregulation indicates failure to compensate
+- Sustained downregulation indicates failure to compensate
 - Links molecular deficits to circuit-level phenotype (epilepsy)
 
 ## Methods

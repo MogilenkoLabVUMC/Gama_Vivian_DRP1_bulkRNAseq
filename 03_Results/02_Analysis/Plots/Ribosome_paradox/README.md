@@ -6,13 +6,13 @@ This folder contains the core finding of the DRP1 mutation analysis: a **transla
 
 ## Generating Scripts
 
-- **R Script**: `02_Analysis/viz_ribosome_paradox.R`
-- **Python Script**: `02_Analysis/7.ribosome_upset_plot.py` (generates UpSet plot, if present)
+- **R Script**: `02_Analysis/2.1.viz_ribosome_paradox.R`
+- **Python Script**: `02_Analysis/3.3.ribosome_upset_plot.py` (generates UpSet plot, if present)
 - **Runtime**: ~3-5 minutes
 - **Dependencies**:
   - `03_Results/02_Analysis/checkpoints/all_gsea_results.rds` - Complete GSEA results
   - `03_Results/02_Analysis/checkpoints/syngo_gsea_results.rds` - SynGO-specific enrichment
-  - GSEA results from main pipeline (`1a.Main_pipeline.R`)
+  - GSEA results from main pipeline (`1.1.main_pipeline.R`)
 
 ## The Ribosome Paradox
 

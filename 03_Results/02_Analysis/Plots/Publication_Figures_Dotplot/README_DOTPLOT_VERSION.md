@@ -63,7 +63,7 @@ Figure 3 is identical to the original because it's a bar chart, not a heatmap/do
    - Manages edge color assignment based on significance
    - Provides consistent rendering across all figures
 
-2. **Modified Script** (`02_Analysis/6b.publication_figures_dotplot.py`)
+2. **Modified Script** (`02_Analysis/3.2.publication_figures_dotplot.py`)
    - All plotting functions updated to use scatter plots
    - Data filtering logic unchanged
    - Output directory separate from original
@@ -78,7 +78,7 @@ Figure 3 is identical to the original because it's a bar chart, not a heatmap/do
 
 Run the dotplot script:
 ```bash
-python3 02_Analysis/6b.publication_figures_dotplot.py
+python3 02_Analysis/3.2.publication_figures_dotplot.py
 ```
 
 This will regenerate all dotplot figures without affecting the original heatmaps.

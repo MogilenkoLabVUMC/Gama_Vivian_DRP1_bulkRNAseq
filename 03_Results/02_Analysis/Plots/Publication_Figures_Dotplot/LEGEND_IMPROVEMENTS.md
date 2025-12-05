@@ -71,7 +71,7 @@ To verify dot sizes match between legend and figures:
 3. For a given padj value, sizes should be identical
 
 ## Files Updated
-- `02_Analysis/6b.publication_figures_dotplot.py`
+- `02_Analysis/3.2.publication_figures_dotplot.py`
   - `add_size_legend_visual()` function completely rewritten
   - All figure GridSpec layouts updated with taller legend areas
 - All dotplot PDFs regenerated with improved legends

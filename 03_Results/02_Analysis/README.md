@@ -1,8 +1,9 @@
 # Differential Expression Analysis Results
 
 **Project:** DRP1 Mutation Bulk RNA-seq Analysis
-**Last Updated:** 2025-11-26
+**Last Updated:** 2025-12-04
 **Pipeline Version:** Post-migration validated (v1.0+)
+**Pattern System Version:** 2.0 (8-pattern taxonomy with Sign_reversal)
 
 ---
 
@@ -157,18 +158,33 @@ Contrasts are mapped to a developmental trajectory framework for pattern analysi
 
 ### Pattern Classifications
 
-Pathways are classified based on Early → TrajDev → Late dynamics:
+Pathways are classified into 8 mutually exclusive patterns based on Early → TrajDev → Late dynamics. The framework distinguishes **active** patterns (requiring significant trajectory deviation) from **passive** patterns (developmental buffering without active compensation).
 
-| Pattern | Criteria | Interpretation |
-|---------|----------|----------------|
-| **Compensation** | Early defect, TrajDev opposes, Late improved | Active adaptive response |
-| **Progressive** | Early defect, TrajDev amplifies, Late worsened | Cumulative damage |
-| **Natural_worsening** | Early defect, no TrajDev, Late worsened | Passive deterioration |
-| **Natural_improvement** | Early defect, no TrajDev, Late improved | Passive recovery |
-| **Late_onset** | No early defect, Late defect emerges | Maturation-dependent |
-| **Transient** | Early defect, resolved by Late | Developmental delay |
-| **Persistent** | Stable defect, no trajectory change | Unchanging dysfunction |
-| **Complex** | Non-linear pattern | Multi-phase dynamics |
+**Full 8-Pattern Taxonomy:**
+
+| Pattern | Active? | Criteria | Interpretation |
+|---------|---------|----------|----------------|
+| **Compensation** | Active | Early defect + TrajDev opposes + Late improved | Active adaptive response; system compensates |
+| **Sign_reversal** | Active | Early defect + TrajDev opposes + Late opposite sign | Trajectory reversal; defect direction completely flipped |
+| **Progressive** | Active | Early defect + TrajDev amplifies + Late worsened | Cumulative damage; active maladaptive response |
+| **Natural_worsening** | Passive | Early defect + no TrajDev + Late worsened | Passive deterioration; no adaptive capacity |
+| **Natural_improvement** | Passive | Early defect + no TrajDev + Late improved | Passive recovery; developmental buffering |
+| **Late_onset** | - | No early defect + Late defect emerges | Maturation-dependent dysfunction |
+| **Transient** | - | Early defect + resolved by Late | Developmental delay that recovers |
+| **Complex** | - | Non-linear or multiphasic | Requires individual inspection |
+
+**Super-Categories (Simplified for Main Text):**
+
+| Super-Category | Includes | Use Case |
+|----------------|----------|----------|
+| **Active_Compensation** | Compensation | Main narrative - active adaptive responses |
+| **Active_Reversal** | Sign_reversal | Main narrative - trajectory reversal (sign flip) |
+| **Active_Progression** | Progressive | Main narrative - active worsening |
+| **Passive** | Natural_improvement, Natural_worsening | Main narrative - developmental buffering |
+| **Late_onset** | Late_onset | Maturation-dependent effects |
+| **Other** | Transient, Complex | Requires individual inspection |
+
+**Canonical reference:** See `docs/PATTERN_CLASSIFICATION.md` for full specifications and `01_Scripts/Python/pattern_definitions.py` for implementation.
 
 ---
 
@@ -226,13 +242,16 @@ Three comprehensive master tables provide complete analysis results:
 |--------------|-------------|-------------|
 | **Identification** | pathway_id, database, Description | Pathway metadata |
 | **GSEA Statistics** | NES, pvalue, p.adjust, setSize | Enrichment results |
-| **Patterns** | Pattern_G32A, Pattern_R403C | Temporal classifications |
-| **Trajectory NES** | NES_Early/TrajDev/Late_[Mutation] | Stage-specific scores |
-| **Significance** | ever_significant, ever_significant_trajectory | Flags |
+| **Pattern Classification** | Pattern_G32A, Pattern_R403C | One of 8 temporal patterns per mutation |
+| **Pattern Confidence** | Confidence_G32A, Confidence_R403C | "High" (p<0.05) or "Medium" (p<0.10) |
+| **Super-Categories** | Super_Category_G32A, Super_Category_R403C | Simplified 6-category grouping |
+| **Trajectory NES** | NES_Early/TrajDev/Late_[Mutation] | Stage-specific enrichment scores |
+| **Pattern Consistency** | change_consistency | Whether G32A and R403C show same pattern |
+| **Significance Flags** | ever_significant, ever_significant_trajectory | Any contrast significant |
 
-**Generation Script:** `02_Analysis/9.create_master_pathway_table.py`
+**Generation Script:** `02_Analysis/4.1.create_master_pathway_table.py`
 
-**Usage Example:**
+**Usage Examples:**
 
 ```python
 import pandas as pd
@@ -240,25 +259,40 @@ import pandas as pd
 # Load table
 df = pd.read_csv('03_Results/02_Analysis/master_gsea_table.csv')
 
-# Find MitoCarta compensation pathways
+# Find MitoCarta compensation pathways (high confidence)
 mito_comp = df[
     (df['database'] == 'MitoCarta') &
     (df['Pattern_G32A'] == 'Compensation') &
-    (df['category'] == 'Early')
+    (df['Confidence_G32A'] == 'High')
 ]
 print(f"Found {len(mito_comp)} MitoCarta compensation pathways")
+
+# Find pathways showing Sign_reversal in either mutation
+sign_rev = df[
+    ((df['Pattern_G32A'] == 'Sign_reversal') |
+     (df['Pattern_R403C'] == 'Sign_reversal')) &
+    (df['category'] == 'Early')
+].drop_duplicates('pathway_id')
+print(f"Found {len(sign_rev)} pathways with trajectory reversal")
+
+# Compare Active vs Passive patterns
+active = df[df['Super_Category_G32A'].isin(['Active_Compensation', 'Active_Reversal', 'Active_Progression'])]
+passive = df[df['Super_Category_G32A'] == 'Passive']
+print(f"Active patterns: {len(active.drop_duplicates('pathway_id'))}")
+print(f"Passive patterns: {len(passive.drop_duplicates('pathway_id'))}")
 ```
 
 ### 2. Master GSVA Table (Focused - 7 Key Modules)
 
 **Files:**
-- `master_gsva_focused_table.csv` (long format, 42 rows)
-- `gsva_pattern_summary.csv` (wide format, 7 rows)
-- `gsva_statistics_summary.txt` (summary)
+- `master_gsva_focused_table.csv` (long format, 42 rows) - Per-group GSVA scores and statistics
+- `gsva_pattern_summary.csv` (wide format, 7 rows) - Pattern classifications for each module
+- `gsva_statistics_summary.txt` (summary statistics)
 
 **Overview:**
 - **7 modules**: Carefully curated biological modules
-- **42 rows**: 7 modules × 3 genotypes × 2 timepoints
+- **42 rows** (master table): 7 modules × 3 genotypes × 2 timepoints
+- **7 rows** (pattern summary): 1 row per module with trajectory-wide pattern classification
 - **Small & fast**: Ideal for focused hypothesis testing
 
 **The 7 Trajectory Modules:**
@@ -273,7 +307,7 @@ print(f"Found {len(mito_comp)} MitoCarta compensation pathways")
 | **mtDNA Maintenance** | MitoCarta | 29 | F | Mitochondrial genome integrity |
 | **OXPHOS** | MitoCarta | 139 | G | Oxidative phosphorylation |
 
-**Key Columns:**
+**Key Columns (master_gsva_focused_table.csv):**
 
 | Column Group | Key Columns | Description |
 |--------------|-------------|-------------|
@@ -283,20 +317,46 @@ print(f"Found {len(mito_comp)} MitoCarta compensation pathways")
 | **Divergence** | Divergence_vs_Ctrl | Difference from matched control |
 | **Statistics** | t_statistic, p_value, p_adjusted, significant | T-test results |
 
-**Generation Script:** `02_Analysis/9b.create_master_gsva_table.R`
+**Key Columns (gsva_pattern_summary.csv):**
 
-**Usage Example:**
+| Column Group | Key Columns | Description |
+|--------------|-------------|-------------|
+| **Identification** | Module, Display_Name, Source_Database | Module metadata |
+| **Trajectory Metrics** | Expression_vs_CtrlD35_[Mutation]_[Day] | Deviation from baseline at each stage |
+| **Divergence Metrics** | Divergence_vs_Ctrl_[Mutation]_[Day] | Instantaneous difference from control |
+| **Significance** | p_adjusted_[Mutation]_[Day], significant_* | Statistical test results |
+| **Trajectory Deviation** | TrajDev_G32A, TrajDev_R403C | Calculated as (D65_mut - D35_mut) - (D65_ctrl - D35_ctrl) |
+| **Pattern Classification** | Pattern_G32A, Pattern_R403C | One of 8 temporal patterns per mutation |
+| **Pattern Confidence** | Confidence_G32A, Confidence_R403C | "High" or "Medium" (or NA for Complex) |
+| **Super-Categories** | Super_Category_G32A, Super_Category_R403C | Simplified 6-category grouping |
+| **Pattern Consistency** | Change_Consistency | Whether both mutations show same pattern |
+
+**Generation Script:** `02_Analysis/4.2.create_master_gsva_table.R`
+
+**Usage Examples:**
 
 ```r
 library(dplyr)
 
-# Load table
+# Load long format table (GSVA scores)
 df <- read.csv('03_Results/02_Analysis/master_gsva_focused_table.csv')
 
 # View OXPHOS trajectory
 df %>%
   filter(Module == 'OXPHOS') %>%
   select(Genotype, Day, Mean_GSVA, Expression_vs_CtrlD35, Divergence_vs_Ctrl)
+
+# Load pattern summary (classifications)
+patterns <- read.csv('03_Results/02_Analysis/gsva_pattern_summary.csv')
+
+# Find modules with compensation in G32A
+patterns %>%
+  filter(Pattern_G32A == 'Compensation') %>%
+  select(Display_Name, Pattern_G32A, Confidence_G32A, Super_Category_G32A)
+
+# Compare pattern consistency across mutations
+patterns %>%
+  select(Display_Name, Pattern_G32A, Pattern_R403C, Change_Consistency)
 ```
 
 ### 3. Master GSVA Table (Comprehensive - All Pathways)
@@ -319,7 +379,7 @@ df %>%
 | **Divergence** | Divergence_vs_Ctrl | Instantaneous difference from control |
 | **Statistics** | t_statistic, p_value, p_adjusted, significant | T-test results (FDR corrected) |
 
-**Generation Script:** `02_Analysis/10.comprehensive_gsva_analysis.R`
+**Generation Script:** `02_Analysis/4.3.comprehensive_gsva_analysis.R`
 
 **Computation Time:** ~15-40 minutes (cached in checkpoint)
 
@@ -336,6 +396,27 @@ top_divergent <- df %>%
   head(20)
 ```
 
+### How Pattern Classifications Are Stored
+
+Pattern classifications appear in two places with slightly different structures:
+
+**1. master_gsea_table.csv (GSEA results):**
+- One row per pathway × contrast combination (109,990 rows)
+- Pattern columns apply to the entire trajectory (Early→TrajDev→Late)
+- Each pathway has Pattern_G32A, Pattern_R403C, Super_Category_G32A, Super_Category_R403C
+- Pattern is the same across all contrast rows for a given pathway (classification uses all trajectory stages)
+
+**2. gsva_pattern_summary.csv (GSVA focused results):**
+- One row per module (7 rows total)
+- Contains trajectory-wide metrics: TrajDev_G32A, TrajDev_R403C
+- Pattern columns: Pattern_G32A, Pattern_R403C, Confidence_*, Super_Category_*
+- Companion to master_gsva_focused_table.csv which has per-group GSVA scores
+
+**3. master_gsva_all_table.csv (GSVA comprehensive):**
+- Does NOT contain pattern classifications (87,001 rows would be unwieldy)
+- Contains per-group GSVA scores and statistics only
+- Use for exploratory trajectory analysis, then apply patterns post-hoc if needed
+
 ### GSEA vs GSVA: When to Use Which
 
 | Feature | GSEA (master_gsea_table) | GSVA (focused) | GSVA (all) |
@@ -346,6 +427,7 @@ top_divergent <- df %>%
 | **Question** | "Is pathway differentially enriched?" | "How do key modules change?" | "Which pathways show trajectories?" |
 | **Advantage** | Statistical power for DE | Fast, focused | Comprehensive exploration |
 | **Statistical test** | Permutation test | T-test | T-test |
+| **Pattern classifications** | YES (all pathways) | YES (7 modules) | NO (too large) |
 | **Best for** | Discovering enriched pathways | Hypothesis testing | Hypothesis generation |
 
 ---
@@ -381,16 +463,16 @@ top_divergent <- df %>%
 
 | Script | Purpose | Runtime | Output |
 |--------|---------|---------|--------|
-| `1a.Main_pipeline.R` | Core DE + GSEA | 30-60 min | DE_results/, checkpoints/, Plots/GSEA/, Plots/Volcano/ |
-| `1b.generate_contrast_tables.R` | Extract DE tables | <1 min | DE_results/*.csv |
-| `2.add_MitoCarta.R` | MitoCarta GSEA | 2-5 min | checkpoints/mitocarta_*.rds, Plots/GSEA/*/MitoCarta/ |
-| `3.export_gsea_for_python.R` | Export for Python | <1 min | Python_exports/*.csv |
-| `9.create_master_pathway_table.py` | Master GSEA table | <1 min | master_gsea_table.csv |
-| `9b.create_master_gsva_table.R` | Focused GSVA table | <1 min | master_gsva_focused_table.csv |
-| `10.comprehensive_gsva_analysis.R` | Comprehensive GSVA | 15-40 min | master_gsva_all_table.csv |
-| `10.prepare_explorer_data.py` | Interactive explorer | 2-5 min | Explorer/DRP1_Pathway_Explorer.html |
+| `1.1.main_pipeline.R` | Core DE + GSEA | 30-60 min | DE_results/, checkpoints/, Plots/GSEA/, Plots/Volcano/ |
+| `1.2.generate_contrast_tables.R` | Extract DE tables | <1 min | DE_results/*.csv |
+| `1.3.add_mitocarta.R` | MitoCarta GSEA | 2-5 min | checkpoints/mitocarta_*.rds, Plots/GSEA/*/MitoCarta/ |
+| `1.4.export_gsea_for_python.R` | Export for Python | <1 min | Python_exports/*.csv |
+| `4.1.create_master_pathway_table.py` | Master GSEA table | <1 min | master_gsea_table.csv |
+| `4.2.create_master_gsva_table.R` | Focused GSVA table | <1 min | master_gsva_focused_table.csv |
+| `4.3.comprehensive_gsva_analysis.R` | Comprehensive GSVA | 15-40 min | master_gsva_all_table.csv |
+| `4.4.prepare_explorer_data.py` | Interactive explorer | 2-5 min | Explorer/DRP1_Pathway_Explorer.html |
 | `viz_*.R` | Specialized visualizations | Varies | Plots/* subdirectories |
-| `6.publication_figures.py` | Publication figures | <5 min | Plots/Publication_Figures/ |
+| `3.1.publication_figures.py` | Publication figures | <5 min | Plots/Publication_Figures/ |
 
 ---
 
@@ -409,30 +491,30 @@ result <- load_or_compute(
 )
 ```
 
-**To force recomputation:** Set `config$force_recompute = TRUE` in `1a.Main_pipeline.R`
+**To force recomputation:** Set `config$force_recompute = TRUE` in `1.1.main_pipeline.R`
 
 ### Re-running the Analysis
 
 ```bash
 # Full pipeline (30-60 min, uses caching)
-Rscript 02_Analysis/1a.Main_pipeline.R
+Rscript 02_Analysis/1.1.main_pipeline.R
 
 # Generate master tables
-python3 02_Analysis/9.create_master_pathway_table.py          # GSEA master table
-Rscript 02_Analysis/9b.create_master_gsva_table.R             # Focused GSVA table
-Rscript 02_Analysis/10.comprehensive_gsva_analysis.R          # Comprehensive GSVA table (slow)
+python3 02_Analysis/4.1.create_master_pathway_table.py          # GSEA master table
+Rscript 02_Analysis/4.2.create_master_gsva_table.R             # Focused GSVA table
+Rscript 02_Analysis/4.3.comprehensive_gsva_analysis.R          # Comprehensive GSVA table (slow)
 
 # Generate interactive explorer
-python3 02_Analysis/10.prepare_explorer_data.py
+python3 02_Analysis/4.4.prepare_explorer_data.py
 
 # Visualizations (R)
-Rscript 02_Analysis/viz_ribosome_paradox.R
-Rscript 02_Analysis/viz_mito_translation_cascade.R
-Rscript 02_Analysis/viz_critical_period_trajectories_gsva.R
+Rscript 02_Analysis/2.1.viz_ribosome_paradox.R
+Rscript 02_Analysis/2.2.viz_mito_translation_cascade.R
+Rscript 02_Analysis/2.4.viz_critical_period_trajectories_gsva.R
 
 # Publication figures (Python)
-python3 02_Analysis/6.publication_figures.py
-python3 02_Analysis/8.pattern_summary_normalized.py
+python3 02_Analysis/3.1.publication_figures.py
+python3 02_Analysis/3.4.pattern_summary_normalized.py
 ```
 
 ---

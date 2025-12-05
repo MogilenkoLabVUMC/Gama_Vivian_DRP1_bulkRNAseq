@@ -6,7 +6,7 @@ Focused analysis of pre- and postsynaptic ribosome programs using SynGO (Synapti
 
 ## Generating Script
 
-- **Script**: `02_Analysis/viz_synaptic_ribosomes.R`
+- **Script**: `02_Analysis/2.3.viz_synaptic_ribosomes.R`
 - **Runtime**: ~2-3 minutes
 - **Dependencies**:
   - `03_Results/02_Analysis/checkpoints/syngo_gsea_results.rds`
