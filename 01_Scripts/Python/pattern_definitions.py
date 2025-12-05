@@ -20,16 +20,14 @@ passive developmental changes.
 
 Pattern Classification
 ---------------------
-1. Compensation: Active adaptive response (TrajDev significant + opposes Early)
-2. Progressive: Active worsening (TrajDev significant + amplifies Early)
-3. Natural_improvement: Passive recovery (TrajDev not significant + improved)
-4. Natural_worsening: Passive deterioration (TrajDev not significant + worsened)
-5. Late_onset: Maturation-dependent (no Early defect, Late defect emerges)
-6. Transient: Developmental delay (strong Early defect, fully resolved)
-7. Complex: Multiphasic or inconsistent patterns
-
-Author: Claude Code
-Date: 2025-11-26
+1. Compensation: Active adaptive response (TrajDev significant + opposes Early + improved)
+2. Sign_reversal: Active trajectory reversal (TrajDev significant + opposes Early + sign flipped)
+3. Progressive: Active worsening (TrajDev significant + amplifies Early)
+4. Natural_improvement: Passive recovery (TrajDev not significant + improved)
+5. Natural_worsening: Passive deterioration (TrajDev not significant + worsened)
+6. Late_onset: Maturation-dependent (no Early defect, Late defect emerges)
+7. Transient: Developmental delay (strong Early defect, fully resolved)
+8. Complex: Multiphasic or inconsistent patterns (with subtypes)
 """
 
 import numpy as np
@@ -62,8 +60,8 @@ GSVA_STRONG = 0.30           # Equivalent to NES 1.0
 # SUPER-CATEGORY MAPPING (Simplified for main figures/text)
 # =============================================================================
 #
-# The 7-pattern system provides detailed trajectory classification, but for
-# main text interpretation, a simpler 5-category system is often more useful.
+# The 8-pattern system provides detailed trajectory classification, but for
+# main text interpretation, a simpler 6-category system is often more useful.
 #
 # Super-categories:
 # - Active_Compensation: Patterns with significant TrajDev opposing early defects
@@ -72,11 +70,12 @@ GSVA_STRONG = 0.30           # Equivalent to NES 1.0
 # - Late_onset: Maturation-dependent dysfunction (biologically distinct)
 # - Other: Transient, Complex patterns
 #
-# Usage: Main figures use super-categories; detailed 7-pattern taxonomy reserved
+# Usage: Main figures use super-categories; detailed 8-pattern taxonomy reserved
 # for Methods section and Supplementary materials.
 
 SUPER_CATEGORY_MAP = {
     'Compensation': 'Active_Compensation',
+    'Sign_reversal': 'Active_Reversal',
     'Progressive': 'Active_Progression',
     'Natural_improvement': 'Passive',
     'Natural_worsening': 'Passive',
@@ -89,6 +88,7 @@ SUPER_CATEGORY_MAP = {
 # Colors for super-categories (colorblind-safe)
 SUPER_CATEGORY_COLORS = {
     'Active_Compensation': '#009E73',  # Bluish green - good outcome
+    'Active_Reversal': '#9467BD',      # Purple - trajectory reversal
     'Active_Progression': '#D55E00',   # Vermillion - worsening
     'Passive': '#56B4E9',              # Sky blue - neutral
     'Late_onset': '#CC79A7',           # Reddish purple - maturation-dependent
@@ -99,12 +99,53 @@ SUPER_CATEGORY_COLORS = {
 # Order for plotting
 SUPER_CATEGORY_ORDER = [
     'Active_Compensation',
+    'Active_Reversal',
     'Active_Progression',
     'Passive',
     'Late_onset',
     'Other',
     'Insufficient_data'
 ]
+
+
+# =============================================================================
+# CENTRALIZED PATTERN CONSTANTS (Single Source of Truth)
+# =============================================================================
+# These constants should be imported by all visualization scripts instead of
+# defining local copies. This ensures consistency across the codebase.
+
+# Canonical pattern order for visualizations (excludes Insufficient_data)
+MEANINGFUL_PATTERNS = [
+    'Compensation', 'Sign_reversal', 'Progressive',
+    'Natural_worsening', 'Natural_improvement',
+    'Late_onset', 'Transient', 'Complex'
+]
+
+# All patterns including metadata patterns
+ALL_PATTERNS = MEANINGFUL_PATTERNS + ['Insufficient_data']
+
+# Severity order for comparison (least → most severe)
+PATTERN_SEVERITY_ORDER = [
+    'Insufficient_data', 'Complex', 'Transient',
+    'Natural_improvement', 'Natural_worsening',
+    'Late_onset', 'Progressive', 'Sign_reversal', 'Compensation'
+]
+
+# Active patterns (require significant TrajDev)
+ACTIVE_PATTERNS = ['Compensation', 'Sign_reversal', 'Progressive']
+
+# Passive patterns (no significant TrajDev)
+PASSIVE_PATTERNS = ['Natural_improvement', 'Natural_worsening']
+
+
+def is_active_pattern(pattern: str) -> bool:
+    """Check if pattern represents active transcriptional response."""
+    return pattern in ACTIVE_PATTERNS
+
+
+def is_passive_pattern(pattern: str) -> bool:
+    """Check if pattern represents passive developmental change."""
+    return pattern in PASSIVE_PATTERNS
 
 
 # =============================================================================
@@ -124,6 +165,20 @@ PATTERN_DEFINITIONS: Dict[str, Dict[str, Any]] = {
         ),
         'confidence_levels': ['High (p<0.05)', 'Medium (0.05<=p<0.10)'],
         'color': '#009E73'  # Bluish green - good outcome
+    },
+    'Sign_reversal': {
+        'criteria': 'Early sig defect + TrajDev sig opposing + Late OPPOSITE SIGN from Early',
+        'interpretation': (
+            'Trajectory reversal; TrajDev response reversed the defect direction. '
+            'The pathway went from one enrichment state to the opposite.'
+        ),
+        'biological_significance': (
+            'Direction matters: Up→Down often indicates failed compensation (e.g., synaptic ribosomes). '
+            'Down→Up often indicates successful recovery (e.g., Complex I). '
+            'Requires biological context to interpret outcome.'
+        ),
+        'confidence_levels': ['High (p<0.05)', 'Medium (0.05<=p<0.10)'],
+        'color': '#9467BD'  # Purple - distinct trajectory reversal
     },
     'Progressive': {
         'criteria': 'Early sig defect + TrajDev sig amplifying + Late worsened',
@@ -320,6 +375,14 @@ def classify_pattern(
         if trajdev_sig and trajdev_opposes and improved:
             return ('Compensation', confidence)
 
+        # Sign_reversal: TrajDev opposes AND sign flipped between Early and Late
+        # This captures pathways where the defect direction completely reversed
+        if trajdev_sig and trajdev_opposes:
+            sign_flip = np.sign(early_nes) != np.sign(late_nes)
+            late_substantial = late_abs > NES_EFFECT
+            if sign_flip and late_substantial:
+                return ('Sign_reversal', confidence)
+
         if trajdev_sig and trajdev_amplifies and worsened:
             return ('Progressive', confidence)
 
@@ -409,7 +472,7 @@ def add_pattern_classification(
             print(f"  {pattern}: {count} ({pct:.1f}%)")
 
         # Print confidence breakdown for active patterns
-        for pattern in ['Compensation', 'Progressive']:
+        for pattern in ['Compensation', 'Sign_reversal', 'Progressive']:
             subset = df[df[f'Pattern_{mutation}'] == pattern]
             if len(subset) > 0:
                 conf_counts = subset[f'Confidence_{mutation}'].value_counts()
@@ -513,7 +576,7 @@ def get_super_category(pattern: str) -> str:
     Parameters
     ----------
     pattern : str
-        One of the 7 pattern names (Compensation, Progressive, etc.)
+        One of the 8 pattern names (Compensation, Sign_reversal, Progressive, etc.)
 
     Returns
     -------
@@ -622,3 +685,149 @@ def get_super_category_summary(df: pd.DataFrame, mutation: str) -> pd.DataFrame:
     })
 
     return summary[summary['Count'] > 0]
+
+
+# =============================================================================
+# COMPLEX SUBTYPE CLASSIFICATION
+# =============================================================================
+
+# Complex subtypes for metadata (not primary visualization)
+COMPLEX_SUBTYPES = {
+    'Stagnant': 'TrajDev significant but no outcome change (|Late|/|Early| ≈ 1.0)',
+    'Weak_early': 'Early |NES| ≤ 1.0 with sign flip (subthreshold for Sign_reversal)',
+    'Multiphasic': 'Inconsistent direction changes or TrajDev not opposing',
+    'Weak_signal': 'Subthreshold early defect (|Early| < 0.5 or p > 0.10)',
+}
+
+
+def get_complex_subtype(
+    early_nes: float,
+    early_padj: float,
+    trajdev_nes: float,
+    trajdev_padj: float,
+    late_nes: float,
+    late_padj: float
+) -> Optional[str]:
+    """
+    Subclassify Complex patterns into subtypes for metadata.
+
+    This function should only be called for pathways already classified as Complex.
+    Returns None if the pathway shouldn't be Complex (indicates a classification error).
+
+    Parameters
+    ----------
+    early_nes, early_padj, trajdev_nes, trajdev_padj, late_nes, late_padj : float
+        Same as classify_pattern()
+
+    Returns
+    -------
+    str or None
+        Complex subtype: 'Stagnant', 'Weak_early', 'Multiphasic', or 'Weak_signal'
+    """
+    if pd.isna([early_nes, trajdev_nes, late_nes, early_padj]).any():
+        return None
+
+    early_abs = abs(early_nes)
+    late_abs = abs(late_nes)
+    trajdev_abs = abs(trajdev_nes)
+
+    # Basic assessments
+    early_sig = (early_padj < PADJ_SIGNIFICANT) and (early_abs > NES_EFFECT)
+    early_strong = (early_padj < PADJ_SIGNIFICANT) and (early_abs > NES_STRONG)
+    trajdev_sig = (trajdev_padj < PADJ_SIGNIFICANT) and (trajdev_abs > NES_EFFECT)
+    trajdev_opposes = np.sign(trajdev_nes) != np.sign(early_nes) if early_abs > 0.1 else False
+    sign_flip = np.sign(early_nes) != np.sign(late_nes)
+
+    # Calculate ratio for stagnant check
+    if early_abs > 0.1:
+        ratio = late_abs / early_abs
+        stagnant = (IMPROVEMENT_RATIO <= ratio <= WORSENING_RATIO)
+    else:
+        stagnant = False
+
+    # Weak_signal: Subthreshold early defect
+    if not early_sig:
+        return 'Weak_signal'
+
+    # Stagnant: TrajDev significant but outcome unchanged
+    if trajdev_sig and stagnant:
+        return 'Stagnant'
+
+    # Weak_early: Sign flip but early not strong enough for Sign_reversal
+    if sign_flip and trajdev_sig and trajdev_opposes and not early_strong:
+        return 'Weak_early'
+
+    # Multiphasic: Everything else (inconsistent directions, TrajDev not opposing, etc.)
+    return 'Multiphasic'
+
+
+def add_complex_subtype_columns(
+    df: pd.DataFrame,
+    mutations: Optional[list] = None
+) -> pd.DataFrame:
+    """
+    Add Complex_subtype columns for pathways classified as Complex.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame with Pattern_{mutation} columns
+    mutations : list, optional
+        Mutations to process. Default: ['G32A', 'R403C']
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with added Complex_subtype_{mutation} columns
+    """
+    if mutations is None:
+        mutations = ['G32A', 'R403C']
+
+    df = df.copy()
+
+    for mutation in mutations:
+        pattern_col = f'Pattern_{mutation}'
+        subtype_col = f'Complex_subtype_{mutation}'
+
+        if pattern_col not in df.columns:
+            print(f"  Warning: {pattern_col} not found, skipping")
+            continue
+
+        # Column name references
+        early_nes_col = f'NES_Early_{mutation}'
+        early_padj_col = f'p.adjust_Early_{mutation}'
+        trajdev_nes_col = f'NES_TrajDev_{mutation}'
+        trajdev_padj_col = f'p.adjust_TrajDev_{mutation}'
+        late_nes_col = f'NES_Late_{mutation}'
+        late_padj_col = f'p.adjust_Late_{mutation}'
+
+        required_cols = [early_nes_col, early_padj_col, trajdev_nes_col,
+                        trajdev_padj_col, late_nes_col, late_padj_col]
+
+        if not all(col in df.columns for col in required_cols):
+            missing = [c for c in required_cols if c not in df.columns]
+            print(f"  Warning: Missing columns for {mutation} Complex subtyping: {missing}")
+            continue
+
+        # Apply subtype classification only to Complex patterns
+        def classify_subtype(row):
+            if row[pattern_col] != 'Complex':
+                return None
+            return get_complex_subtype(
+                row[early_nes_col], row[early_padj_col],
+                row[trajdev_nes_col], row[trajdev_padj_col],
+                row[late_nes_col], row[late_padj_col]
+            )
+
+        df[subtype_col] = df.apply(classify_subtype, axis=1)
+
+        # Print summary
+        complex_df = df[df[pattern_col] == 'Complex']
+        if len(complex_df) > 0:
+            subtype_counts = complex_df[subtype_col].value_counts()
+            print(f"\n{mutation} Complex subtype distribution:")
+            for subtype, count in subtype_counts.items():
+                pct = count / len(complex_df) * 100
+                print(f"  {subtype}: {count} ({pct:.1f}%)")
+
+    return df

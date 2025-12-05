@@ -50,25 +50,111 @@ SEMANTIC_COLORS = {
     'Other': '#696969',                       # Dim gray
 }
 
-# Pattern colors for trajectory classification (colorblind-safe Wong palette)
-# IMPORTANT: Canonical pattern definitions are in pattern_definitions.py
-# These colors must match the 7-pattern system defined there.
-PATTERN_COLORS = {
-    'Compensation': '#009E73',       # Bluish green - active adaptive response
-    'Progressive': '#D55E00',        # Vermillion - active worsening
-    'Natural_worsening': '#E69F00',  # Orange - passive deterioration
-    'Natural_improvement': '#56B4E9', # Sky blue - passive recovery
-    'Late_onset': '#CC79A7',         # Reddish purple - maturation-dependent
-    'Transient': '#0072B2',          # Blue - developmental delay resolved
-    'Complex': '#F0E442',            # Yellow - multiphasic/inconsistent
-    'Insufficient_data': '#DDDDDD',  # Light gray - missing data
-}
+# Pattern colors for trajectory classification
+# IMPORTANT: Import from canonical source to maintain single source of truth
+from .pattern_definitions import get_pattern_colors
+PATTERN_COLORS = get_pattern_colors()  # Re-export for backward compatibility
 
-# Mutation colors (colorblind-safe)
-MUTATION_COLORS = {
-    'G32A': '#0072B2',   # Blue - GTPase domain mutation
-    'R403C': '#D55E00',  # Vermillion/Orange - Stalk domain mutation
-}
+# Mutation colors - import from unified color config (single source of truth)
+# Note: For heatmap annotations, use HEATMAP_ANNOTATION_COLORS from color_config.py
+from .color_config import MUTATION_COLORS  # Re-export for backward compatibility
+
+# =============================================================================
+# BIOLOGICAL RELEVANCE FILTERING FOR HIGHLIGHT SELECTION
+# =============================================================================
+# These constants control which pathways get highlighted/labeled in figures.
+# Context: iPSC-derived cortical neurons with DRP1 mutations affecting
+# mitochondrial dynamics, translation, and synaptic development.
+
+# Keywords to EXCLUDE from highlighting (not relevant to cortical neurons)
+# Case-insensitive matching against pathway Description
+EXCLUDE_FROM_HIGHLIGHT_KEYWORDS = [
+    # Developmental/tissue-specific (wrong cell type)
+    'MATERNAL', 'ZYGOTIC', 'EMBRYONIC_AXIS',
+    'CARDIOMYOCYTE', 'CARDIAC_MUSCLE', 'HEART_FIELD', 'CARDIAC_CHAMBER',
+    'SKELETAL_MUSCLE', 'STRIATED_MUSCLE', 'MUSCLE_CONTRACTION', 'MYOFIBRIL',
+    'OSTEOBLAST', 'OSTEOCLAST', 'BONE_REMODEL', 'CHONDROCYTE',
+    'NEPHRON', 'KIDNEY', 'RENAL', 'GLOMERUL',
+    'HEPATOCYTE', 'LIVER', 'HEPAT', 'BILE',
+    'ADIPOCYTE', 'ADIPOGEN', 'FAT_CELL',
+    'PANCREA', 'ISLET', 'INSULIN_SECRET',
+    'SPERM', 'SPERMAT', 'TESTIS', 'OVARY', 'OOCYTE',
+    # Cancer-specific (disease context mismatch)
+    'CANCER', 'TUMOR', 'METASTA', 'ONCOGEN', 'CARCINOMA',
+    'LEUKEMIA', 'LYMPHOMA', 'MELANOMA', 'GLIOBLASTOMA',
+    # Immune-specific (not primary focus)
+    'T_CELL_RECEPTOR', 'B_CELL_RECEPTOR', 'ANTIBODY', 'IMMUNOGLOBULIN',
+    'ANTIGEN_PRESENT', 'MHC_CLASS',
+    # Plant/non-mammalian
+    'PLANT', 'CHLOROPLAST', 'PHOTOSYNTH',
+]
+
+# Priority semantic categories for DRP1 neuronal analysis
+# Pathways in these categories get priority for highlighting
+PRIORITY_CATEGORIES_FOR_HIGHLIGHT = [
+    'Synapse',                       # Core: synaptic function
+    'Neuronal Development',          # Core: neuronal maturation
+    'Mitochondrial Dynamics',        # Core: DRP1's primary function
+    'Mitochondrial Ribosome',        # Core: mito translation machinery
+    'Mitochondrial Translation',     # Core: mito protein synthesis
+    'Electron Transport Chain',      # Core: OXPHOS complexes I-IV
+    'ATP Synthase (Complex V)',      # Core: ATP production
+    'Cytoplasmic Ribosome',          # Important: cytosolic translation
+    'Cytoplasmic Translation',       # Important: protein synthesis
+    'Ribosome Biogenesis',           # Important: ribosome assembly
+    'Calcium Signaling',             # Important: Ca2+ homeostasis
+    'Mitochondrial Metabolism',      # Relevant: TCA, fatty acid oxidation
+    'Mitochondrial Function',        # Relevant: general mito
+]
+
+# Maximum pathways from non-priority categories (fallback)
+MAX_OTHER_CATEGORY_HIGHLIGHTS = 2
+
+
+def is_relevant_for_highlight(description):
+    """
+    Check if a pathway is biologically relevant for highlighting.
+
+    Parameters
+    ----------
+    description : str
+        Pathway description/name
+
+    Returns
+    -------
+    bool
+        True if pathway should be considered for highlighting
+    """
+    if not description:
+        return False
+
+    desc_upper = str(description).upper()
+
+    # Check against exclusion keywords
+    for keyword in EXCLUDE_FROM_HIGHLIGHT_KEYWORDS:
+        if keyword in desc_upper:
+            return False
+
+    return True
+
+
+def get_highlight_priority(semantic_category):
+    """
+    Get priority score for a semantic category (lower = higher priority).
+
+    Parameters
+    ----------
+    semantic_category : str
+        The semantic category from assign_semantic_category()
+
+    Returns
+    -------
+    int
+        Priority score (0 = highest priority, 99 = lowest/Other)
+    """
+    if semantic_category in PRIORITY_CATEGORIES_FOR_HIGHLIGHT:
+        return PRIORITY_CATEGORIES_FOR_HIGHLIGHT.index(semantic_category)
+    return 99  # 'Other' or unknown categories
 
 
 def assign_semantic_category(row, exclude_pathways=None):
