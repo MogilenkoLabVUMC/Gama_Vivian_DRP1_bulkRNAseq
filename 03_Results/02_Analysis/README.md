@@ -331,7 +331,7 @@ print(f"Passive patterns: {len(passive.drop_duplicates('pathway_id'))}")
 | **Super-Categories** | Super_Category_G32A, Super_Category_R403C | Simplified 6-category grouping |
 | **Pattern Consistency** | Change_Consistency | Whether both mutations show same pattern |
 
-**Generation Script:** `02_Analysis/4.2.create_master_gsva_table.R`
+**Generation Script:** `02_Analysis/1.7.create_master_gsva_table.R`
 
 **Usage Examples:**
 
@@ -379,7 +379,7 @@ patterns %>%
 | **Divergence** | Divergence_vs_Ctrl | Instantaneous difference from control |
 | **Statistics** | t_statistic, p_value, p_adjusted, significant | T-test results (FDR corrected) |
 
-**Generation Script:** `02_Analysis/4.3.comprehensive_gsva_analysis.R`
+**Generation Script:** `02_Analysis/1.6.gsva_analysis.R`
 
 **Computation Time:** ~15-40 minutes (cached in checkpoint)
 
@@ -468,8 +468,8 @@ Pattern classifications appear in two places with slightly different structures:
 | `1.3.add_mitocarta.R` | MitoCarta GSEA | 2-5 min | checkpoints/mitocarta_*.rds, Plots/GSEA/*/MitoCarta/ |
 | `1.4.export_gsea_for_python.R` | Export for Python | <1 min | Python_exports/*.csv |
 | `4.1.create_master_pathway_table.py` | Master GSEA table | <1 min | master_gsea_table.csv |
-| `4.2.create_master_gsva_table.R` | Focused GSVA table | <1 min | master_gsva_focused_table.csv |
-| `4.3.comprehensive_gsva_analysis.R` | Comprehensive GSVA | 15-40 min | master_gsva_all_table.csv |
+| `1.7.create_master_gsva_table.R` | Focused GSVA table | <1 min | master_gsva_focused_table.csv |
+| `1.6.gsva_analysis.R` | Comprehensive GSVA | 15-40 min | master_gsva_all_table.csv |
 | `4.4.prepare_explorer_data.py` | Interactive explorer | 2-5 min | Explorer/DRP1_Pathway_Explorer.html |
 | `viz_*.R` | Specialized visualizations | Varies | Plots/* subdirectories |
 | `3.1.publication_figures.py` | Publication figures | <5 min | Plots/Publication_Figures/ |
@@ -501,8 +501,8 @@ Rscript 02_Analysis/1.1.main_pipeline.R
 
 # Generate master tables
 python3 02_Analysis/4.1.create_master_pathway_table.py          # GSEA master table
-Rscript 02_Analysis/4.2.create_master_gsva_table.R             # Focused GSVA table
-Rscript 02_Analysis/4.3.comprehensive_gsva_analysis.R          # Comprehensive GSVA table (slow)
+Rscript 02_Analysis/1.7.create_master_gsva_table.R             # Focused GSVA table
+Rscript 02_Analysis/1.6.gsva_analysis.R          # Comprehensive GSVA table (slow)
 
 # Generate interactive explorer
 python3 02_Analysis/4.4.prepare_explorer_data.py

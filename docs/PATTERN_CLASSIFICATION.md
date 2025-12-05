@@ -32,11 +32,12 @@ A **significant TrajDev** indicates that the mutant's maturation actively differ
 
 ## Super-Category System (Simplified)
 
-For main text interpretation, patterns are grouped into 5 super-categories:
+For main text interpretation, patterns are grouped into 6 super-categories:
 
 | Super-Category | Includes | Use Case |
 |----------------|----------|----------|
 | **Active_Compensation** | Compensation | Main narrative - active adaptive responses |
+| **Active_Reversal** | Sign_reversal | Main narrative - trajectory reversal (sign flip) |
 | **Active_Progression** | Progressive | Main narrative - active worsening (rare in data) |
 | **Passive** | Natural_improvement, Natural_worsening | Main narrative - developmental buffering |
 | **Late_onset** | Late_onset | Maturation-dependent effects |
@@ -44,7 +45,7 @@ For main text interpretation, patterns are grouped into 5 super-categories:
 
 **Usage:**
 - Main figures and text: Use super-categories for clearer narrative
-- Detailed analysis: Use full 7-pattern taxonomy
+- Detailed analysis: Use full 8-pattern taxonomy
 - Methods/Supplements: Document both levels
 
 **Implementation:** See `pattern_definitions.py` for `SUPER_CATEGORY_MAP` and `add_super_category_columns()`.
@@ -53,17 +54,44 @@ For main text interpretation, patterns are grouped into 5 super-categories:
 
 ## Pattern Definitions
 
-### The 7-Pattern Classification System
+### The 8-Pattern Classification System
 
 | Pattern | Active? | Criteria | Biological Interpretation |
 |---------|---------|----------|---------------------------|
 | **Compensation** | Active | Early defect + TrajDev opposes + Late improved | Adaptive plasticity; system actively compensates for mutation effects |
+| **Sign_reversal** | Active | Early defect + TrajDev opposes + Late OPPOSITE SIGN | Trajectory reversal; TrajDev reversed the defect direction completely |
 | **Progressive** | Active | Early defect + TrajDev amplifies + Late worsened | Cumulative damage; active maladaptive response |
 | **Natural_worsening** | Passive | Early defect + TrajDev NS + Late worsened | Passive deterioration; no adaptive capacity |
 | **Natural_improvement** | Passive | Early defect + TrajDev NS + Late improved | Passive recovery; developmental buffering |
 | **Late_onset** | - | No Early defect + Late defect emerges | Maturation-dependent dysfunction |
 | **Transient** | - | Strong Early defect + Late resolved | Developmental delay that recovers |
-| **Complex** | - | Inconsistent or multiphasic | Requires individual inspection |
+| **Complex** | - | Inconsistent or multiphasic | Requires individual inspection (see subtypes) |
+
+### Sign_reversal: Biological Context
+
+Sign_reversal captures pathways where the defect direction **completely reversed** between Early and Late:
+
+| Flip Direction | Example | Interpretation |
+|---------------|---------|----------------|
+| **Up → Down** | Synaptic ribosomes: +2.3 → -2.5 | Early upregulation (possibly compensatory) collapsed into late downregulation (disease phenotype) |
+| **Down → Up** | Complex I: -1.4 → +1.0 | Early deficiency was corrected, possibly over-corrected |
+
+**Key insight:** The biological interpretation depends on the pathway context:
+- For synaptic ribosomes, Up→Down represents **failed compensation** leading to disease phenotype
+- For mitochondrial Complex I, Down→Up represents **successful recovery**
+
+### Complex Subtypes (Metadata Classification)
+
+Pathways classified as Complex are further subtyped for metadata purposes:
+
+| Subtype | Criteria | Description |
+|---------|----------|-------------|
+| **Stagnant** | TrajDev significant but \|Late\|/\|Early\| ≈ 1.0 | TrajDev present but no outcome change |
+| **Weak_early** | \|Early\| ≤ 1.0 with sign flip | Subthreshold for Sign_reversal (early not strong enough) |
+| **Multiphasic** | Inconsistent direction changes | TrajDev not opposing or inconsistent dynamics |
+| **Weak_signal** | \|Early\| < 0.5 or p > 0.10 | Subthreshold early defect |
+
+Use `add_complex_subtype_columns()` to add Complex_subtype_{mutation} columns for filtering.
 
 ### Classification Criteria Details
 
@@ -133,8 +161,10 @@ def classify_pattern(early_nes, early_padj, trajdev_nes, trajdev_padj, late_nes,
     # Step 2: Assess Late outcome
     late_sig_defect = (late_padj < 0.05) and (|late_nes| > 1.0)
     late_resolved = |late_nes| < 0.5
+    late_substantial = |late_nes| > 0.5
     improved = (|late|/|early| < 0.7) or late_resolved
     worsened = |late|/|early| > 1.3
+    sign_flip = sign(early_nes) != sign(late_nes)
 
     # Step 3: Assess TrajDev (Active vs Passive)
     trajdev_sig = (trajdev_padj < 0.05) and (|trajdev_nes| > 0.5)
@@ -149,10 +179,13 @@ def classify_pattern(early_nes, early_padj, trajdev_nes, trajdev_padj, late_nes,
     if early_sig_defect or early_trending:
         confidence = "High" if early_sig_defect else "Medium"
 
-        # Active patterns FIRST - significant TrajDev indicates active compensation,
-        # not passive transient recovery
+        # Active patterns FIRST - significant TrajDev indicates active compensation
         if trajdev_sig and trajdev_opposes and improved:
             return "Compensation", confidence
+
+        # Sign_reversal: TrajDev opposes AND sign flipped between Early and Late
+        if trajdev_sig and trajdev_opposes and sign_flip and late_substantial:
+            return "Sign_reversal", confidence
 
         if trajdev_sig and trajdev_amplifies and worsened:
             return "Progressive", confidence
@@ -171,7 +204,10 @@ def classify_pattern(early_nes, early_padj, trajdev_nes, trajdev_padj, late_nes,
     return "Complex", None
 ```
 
-**Important:** Active patterns (Compensation, Progressive) are checked BEFORE Transient because significant opposing TrajDev indicates active compensatory mechanisms, not passive developmental recovery.
+**Important:**
+- Compensation is checked before Sign_reversal (improved takes priority over sign flip)
+- Sign_reversal captures cases where TrajDev opposed but the sign completely flipped
+- Active patterns are checked BEFORE Transient because significant opposing TrajDev indicates active mechanisms
 
 ## Implementation Files
 
@@ -180,7 +216,7 @@ def classify_pattern(early_nes, early_padj, trajdev_nes, trajdev_padj, late_nes,
 | `01_Scripts/Python/pattern_definitions.py` | **Canonical source** - all thresholds and classify_pattern() |
 | `01_Scripts/Python/patterns.py` | User-facing wrapper with backward compatibility |
 | `01_Scripts/Python/semantic_categories.py` | PATTERN_COLORS for visualization |
-| `02_Analysis/9b.create_master_gsva_table.R` | R implementation for GSVA analysis |
+| `02_Analysis/1.7.create_master_gsva_table.R` | R implementation for GSVA analysis |
 
 ## Usage Examples
 
@@ -206,7 +242,7 @@ df = add_pattern_classification(gsea_wide_df, mutations=['G32A', 'R403C'])
 
 ```r
 # Run the master GSVA table generator
-source("02_Analysis/9b.create_master_gsva_table.R")
+source("02_Analysis/1.7.create_master_gsva_table.R")
 
 # Outputs include Pattern_G32A, Pattern_R403C, Confidence_* columns
 ```
@@ -231,22 +267,23 @@ Claims about pathway trajectories will need validation, and would need to show t
 
 ## Methods Section Template
 
-> Pathway enrichment patterns were classified using a significance-based trajectory framework that distinguishes active adaptive responses from passive developmental changes. Classification required both statistical significance (p.adjust < 0.05 for High confidence, p.adjust < 0.10 for Medium confidence) and biological effect size (|NES| > 0.5). Seven mutually exclusive patterns were defined based on three trajectory stages: Early (mutation effect at Day 35), TrajDev (mutation-specific deviation from control maturation trajectory), and Late (mutation effect at Day 65).
+> Pathway enrichment patterns were classified using a significance-based trajectory framework that distinguishes active adaptive responses from passive developmental changes. Classification required both statistical significance (p.adjust < 0.05 for High confidence, p.adjust < 0.10 for Medium confidence) and biological effect size (|NES| > 0.5). Eight mutually exclusive patterns were defined based on three trajectory stages: Early (mutation effect at Day 35), TrajDev (mutation-specific deviation from control maturation trajectory), and Late (mutation effect at Day 65).
 >
-> **Compensation** was assigned to pathways with an Early defect (p.adjust < 0.05, |NES| > 0.5) that showed significant trajectory deviation opposing the defect direction (TrajDev p.adjust < 0.05, |NES| > 0.5, opposite sign to Early) resulting in Late improvement (≥30% reduction in |NES| or |Late NES| < 0.5). **Progressive** patterns required the same Early criteria but with trajectory deviation amplifying the defect direction (same sign as Early) and Late worsening (≥30% increase in |NES|).
+> **Compensation** was assigned to pathways with an Early defect (p.adjust < 0.05, |NES| > 0.5) that showed significant trajectory deviation opposing the defect direction (TrajDev p.adjust < 0.05, |NES| > 0.5, opposite sign to Early) resulting in Late improvement (≥30% reduction in |NES| or |Late NES| < 0.5). **Sign_reversal** patterns were assigned when significant opposing TrajDev resulted in complete reversal of the defect direction (Late sign opposite to Early, with |Late NES| > 0.5), capturing trajectories like synaptic ribosomes (Early upregulated → Late downregulated). **Progressive** patterns required the same Early criteria but with trajectory deviation amplifying the defect direction (same sign as Early) and Late worsening (≥30% increase in |NES|).
 >
 > Passive patterns (**Natural_improvement**, **Natural_worsening**) were assigned when Early defects improved or worsened without significant trajectory deviation (TrajDev p.adjust ≥ 0.05 or |NES| ≤ 0.5), indicating reliance on normal developmental buffering rather than active transcriptional adaptation.
 >
-> **Late_onset** patterns captured pathways with no significant Early defect (p.adjust ≥ 0.10 or |NES| ≤ 0.5) but emergence of strong Late dysfunction (p.adjust < 0.05, |NES| > 1.0). **Transient** patterns identified strong Early defects (p.adjust < 0.05, |NES| > 1.0) that fully resolved by Late stage (|NES| < 0.5). Pathways not fitting these criteria were classified as **Complex**.
+> **Late_onset** patterns captured pathways with no significant Early defect (p.adjust ≥ 0.10 or |NES| ≤ 0.5) but emergence of strong Late dysfunction (p.adjust < 0.05, |NES| > 1.0). **Transient** patterns identified strong Early defects (p.adjust < 0.05, |NES| > 1.0) that fully resolved by Late stage (|NES| < 0.5). Pathways not fitting these criteria were classified as **Complex**, with optional subtyping into Stagnant, Weak_early, Multiphasic, or Weak_signal for metadata purposes.
 
 ## Change Log
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2025-12-01 | 2.0 | Added Sign_reversal pattern (8-pattern system); added Complex subtypes; added Active_Reversal super-category |
 | 2025-11-26 | 1.1 | Added super-category system; added descriptive classification note |
 | 2025-11-26 | 1.0 | Initial canonical definitions with significance requirements |
 
 ---
 
 **Canonical Source:** `01_Scripts/Python/pattern_definitions.py`
-**Last Updated:** 2025-11-26
+**Last Updated:** 2025-12-01

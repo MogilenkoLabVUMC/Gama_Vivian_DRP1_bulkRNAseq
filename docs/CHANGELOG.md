@@ -320,7 +320,7 @@ Major update for manuscript resubmission with comprehensive visualization suite,
    - Future directions (post-manuscript)
    - Success criteria
 
-4. **`docs/biological_context.md`** - Literature review
+4. **`docs/bio_notes.md`** - Consolidated biological context (replaces `docs/biological_context.md`)
    - Clinical context (DRP1 mutations → epilepsy)
    - Synaptic ribosome biology
    - Mitochondria-translation coupling
@@ -740,8 +740,8 @@ Each major plot folder now contains extensive documentation:
 
 - `02_Analysis/SCRIPTS.md` - Complete script inventory
 - `docs/PATTERN_CLASSIFICATION.md` - Pattern classification system documentation
-- `docs/BIOLOGICAL_RESEARCH.md` - Comprehensive literature review
-- `docs/biological_context.md` - Additional biological context
+- `docs/bio_notes.md` - Curated biological notes (consolidated from prior literature files)
+- `docs/biological_context.md` - Additional biological context (now consolidated into `docs/bio_notes.md`)
 - 7 comprehensive plot folder READMEs
 - `03_Results/02_Analysis/Plots/README.md` - Visualization overview
 
@@ -911,5 +911,5 @@ For each reviewer comment being addressed:
 ---
 
 **For pattern classification details, see**: `docs/PATTERN_CLASSIFICATION.md`
-**For comprehensive literature review, see**: `docs/BIOLOGICAL_RESEARCH.md`
-**For additional biological context, see**: `docs/biological_context.md`
+**For comprehensive literature notes, see**: `docs/bio_notes.md`
+**For additional biological context, see**: `docs/bio_notes.md`

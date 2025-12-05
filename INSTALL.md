@@ -35,13 +35,13 @@ code .
 # Command Palette → "Dev Containers: Reopen in Container"
 
 # 5. Inside container, install runtime R packages
-Rscript 02_Analysis/0.runtime_installs.R
+Rscript 02_Analysis/0.1.runtime_installs.R
 
 # 6. Verify installation
 Rscript freeze_requirements.R
 
 # 7. Run analysis
-Rscript 02_Analysis/1a.Main_pipeline.R
+Rscript 02_Analysis/1.1.main_pipeline.R
 ```
 
 **Estimated time:** 30-45 minutes (20-30 min container build + 10-15 min package installation)
@@ -136,7 +136,7 @@ The container includes most packages, but some must be installed at runtime:
 
 ```bash
 # Inside container - automated installation
-Rscript 02_Analysis/0.runtime_installs.R
+Rscript 02_Analysis/0.1.runtime_installs.R
 ```
 
 This installs:
@@ -176,7 +176,7 @@ ls -lh R_session_info.txt R_packages.txt
 python3 -c "import pandas, numpy, matplotlib, upsetplot; print('✓ Python OK')"
 
 # Quick test of analysis pipeline (~5-10 min with checkpoints)
-Rscript 02_Analysis/1a.Main_pipeline.R
+Rscript 02_Analysis/1.1.main_pipeline.R
 ```
 
 If the main pipeline runs without errors, your environment is correctly configured.
@@ -188,7 +188,7 @@ If the main pipeline runs without errors, your environment is correctly configur
 **Package manifest files:**
 - `R_session_info.txt` - Complete sessionInfo() output with all versions
 - `R_packages.txt` - Simple package list
-- `02_Analysis/0.runtime_installs.R` - Runtime installation script
+- `02_Analysis/0.1.runtime_installs.R` - Runtime installation script
 
 **Core packages** (pre-installed in container):
 
@@ -282,10 +282,10 @@ BiocManager::install("package", update = FALSE)
 **Solution:** Delete cache and recompute:
 ```bash
 rm -rf 03_Results/02_Analysis/checkpoints/*.rds
-Rscript 02_Analysis/1a.Main_pipeline.R
+Rscript 02_Analysis/1.1.main_pipeline.R
 ```
 
-Or set `force_recompute = TRUE` in `02_Analysis/1a.Main_pipeline.R`
+Or set `force_recompute = TRUE` in `02_Analysis/1.1.main_pipeline.R`
 
 ## Reproducing Exact Environment
 
@@ -320,4 +320,4 @@ pip install -r python_requirements_freeze.txt
 - **Container documentation:** [scbio-docker v0.5.1](https://github.com/tony-zhelonkin/scbio-docker/tree/v0.5.1)
 - **Analysis documentation:** [CLAUDE.md](CLAUDE.md) - Detailed analysis guide
 - **Script reference:** [02_Analysis/SCRIPTS.md](02_Analysis/SCRIPTS.md) - Script inventory
-- **Session history:** [docs/SESSION_HISTORY.md](docs/SESSION_HISTORY.md) - Development log
+- **Analysis changelog:** [docs/CHANGELOG.md](docs/CHANGELOG.md) - Analysis evolution and version history

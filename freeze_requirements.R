@@ -85,7 +85,7 @@ for (i in 1:nrow(user_pkgs)) {
 }
 
 cat("\n\n###############################################################################\n")
-cat("## Runtime Install Commands (from 02_Analysis/0.runtime_installs.R)\n")
+cat("## Runtime Install Commands (from 02_Analysis/0.1.runtime_installs.R)\n")
 cat("###############################################################################\n\n")
 cat("# Bioconductor packages\n")
 cat('BiocManager::install(c("WGCNA", "devtools", "org.Hs.eg.db"))\n\n')
