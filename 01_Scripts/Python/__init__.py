@@ -15,8 +15,7 @@ from .semantic_categories import (
 )
 from .data_loader import (
     load_classified_pathways,
-    filter_pathways,
-    load_gsea_trajectory_data
+    filter_pathways
 )
 from .patterns import (
     classify_trajectory_pattern,
@@ -33,7 +32,6 @@ __all__ = [
     'assign_semantic_category',
     'load_classified_pathways',
     'filter_pathways',
-    'load_gsea_trajectory_data',
     'classify_trajectory_pattern',
     'is_compensation',
     'add_pattern_classification'

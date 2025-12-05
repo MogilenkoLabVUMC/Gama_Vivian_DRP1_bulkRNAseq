@@ -11,7 +11,8 @@ from pathlib import Path
 CONFIG = {
     # Data directories
     'data_dir': Path('03_Results/02_Analysis/Python_exports'),
-    'classified_data': Path('03_Results/02_Analysis/Plots/Cross_database_validation/pathways_classified.csv'),
+    'master_gsea_table': Path('03_Results/02_Analysis/master_gsea_table.csv'),
+    'classified_data': Path('03_Results/02_Analysis/Python_exports/gsea_results_wide.csv'),  # Wide format for pattern classification
     'output_dir': Path('03_Results/02_Analysis/Plots/Publication_Figures'),
 
     # Analysis thresholds
