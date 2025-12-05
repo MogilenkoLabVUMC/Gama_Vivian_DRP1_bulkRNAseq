@@ -50,7 +50,19 @@ These difference-in-differences contrasts identify how mutations alter the norma
 - `Maturation_G32A_specific`: (D65_G32A - D35_G32A) - (D65_Control - D35_Control)
 - `Maturation_R403C_specific`: (D65_R403C - D35_R403C) - (D65_Control - D35_Control)
 
-These interaction contrasts represent the deviation of mutant maturation from control maturation. Algebraically, the Late mutation effect equals the sum of the Early mutation effect plus the mutation-specific maturation trajectory: Late = Early + TrajDev. This relationship is central to our trajectory-based pattern classification framework (see Pattern Classification System below).
+These interaction contrasts represent the deviation of mutant maturation from control maturation. It is often helpful to express them in terms of within-genotype maturation effects (`Time_*`):
+
+- `Time_Ctrl`  = D65_Control − D35_Control  
+- `Time_G32A`  = D65_G32A  − D35_G32A  
+- `Time_R403C` = D65_R403C − D35_R403C
+
+By construction:
+
+- `Maturation_mut-specific = Time_mut − Time_Ctrl`
+- `Time_mut = Time_Ctrl + Maturation_mut-specific`
+- `Late_mut = Early_mut + Maturation_mut-specific`
+
+Thus the triplet (Early, TrajDev, Late) fully describes how the mutant effect changes between D35 and D65. Importantly, there is **no fixed sign relationship** between `Time_Ctrl` and the interaction term: an “inverse” appearance (e.g. positive `Time_Ctrl`, negative TrajDev) arises only in specific biological situations such as strong maturation in controls with little change in mutants. The algebra therefore does not force TrajDev to oppose normal maturation; instead, the sign and magnitude of TrajDev reflect genuine differences between mutant and control trajectories. This relationship is central to our trajectory-based pattern classification framework (see Pattern Classification System below).
 
 ### Multiple Testing Correction
 
@@ -100,7 +112,7 @@ Each pathway's enrichment trajectory is characterized by three stages:
 
 ### Biological Interpretation of TrajDev
 
-A statistically significant TrajDev indicates that the mutant's maturation actively differs from control maturation, representing active transcriptional plasticity rather than passive developmental changes. This distinction is critical for identifying compensatory mechanisms: pathways with significant TrajDev that opposes the Early defect direction suggest active adaptive responses, whereas pathways that improve or worsen without significant TrajDev indicate passive developmental buffering.
+A statistically significant TrajDev indicates that the mutant's maturation actively differs from control maturation, representing active transcriptional plasticity rather than passive developmental changes. Because TrajDev is defined as `Time_mut − Time_Ctrl`, its sign should be interpreted in conjunction with both the Early effect and `Time_Ctrl` rather than as an absolute “rate of change.” For example, a strong positive `Time_Ctrl` combined with approximately zero `Time_mut` will yield a strongly negative TrajDev, signalling a failure of maturation in mutants even though the apparent pattern is an “inverse” of the control trajectory. This distinction is critical for identifying compensatory mechanisms: pathways with significant TrajDev that opposes the Early defect direction suggest active adaptive responses, whereas pathways that improve or worsen without significant TrajDev indicate passive developmental buffering.
 
 ## Pattern Classification System
 
