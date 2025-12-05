@@ -1,9 +1,6 @@
 ###############################################################################
 ##  Mechanistic Cascade: Energy Crisis → Translation Failure                ##
-##  Gene sets extracted from REAL significant GSEA pathways                 ##
-###############################################################################
-##  STORY: Mt Central Dogma ↑ → Mt Ribosomes ↑ → OXPHOS ↑ (compensation)   ##
-##         BUT: Synaptic Ribosomes ↓ → Failed local translation → Ca2+     ##
+##  Gene sets extracted from  significant GSEA pathways                     ##
 ###############################################################################
 
 library(here)
@@ -13,6 +10,9 @@ library(tidyr)
 library(ComplexHeatmap)
 library(circlize)
 library(grid)
+
+# Load unified color configuration
+source(here("01_Scripts/R_scripts/color_config.R"))
 
 message("📂 Loading checkpoints...")
 checkpoint_dir <- here("03_Results/02_Analysis/checkpoints")
@@ -244,21 +244,11 @@ message(sprintf("  Total genes for heatmap: %d\n", nrow(cascade_data)))
 
 message("📊 Creating mechanistic cascade heatmap...\n")
 
-# Color scheme for logFC
-col_fun <- colorRamp2(
-  c(-1.5, -0.75, 0, 0.75, 1.5),
-  c("#0571b0", "#92c5de", "white", "#f4a582", "#ca0020")
-)
+# Color scheme for logFC (using unified palette from color_config.R)
+col_fun <- logfc_color_scale(limits = c(-1.5, 1.5))
 
-# Module colors (Updated to match Fig 4 Semantic Colors where possible)
-module_colors <- c(
-  "1. Mt Central Dogma" = "#CC79A7",
-  "2. Mt Ribosomes" = "#E69F00",
-  "3. ATP Synthase (Complex V)" = "#DAA520", # Goldenrod (matches Fig 4)
-  "4. Synaptic Ribo (Common)" = "#009E73",
-  "5. Postsynaptic Ribo (Only)" = "#D55E00",
-  "6. Calcium Signaling" = "#DC143C"       # Crimson (matches Fig 4)
-)
+# Module colors (from unified color_config.R)
+module_colors <- MODULE_COLORS
 
 # Row annotation
 ha_module <- rowAnnotation(
@@ -279,12 +269,15 @@ ha_module <- rowAnnotation(
 mutation_groups <- c(rep("G32A", 3), rep("R403C", 3))
 trajectory_groups <- rep(c("Early", "TrajDev", "Late"), 2)
 
+## Use unified heatmap annotation colors (from color_config.R)
+## These are specifically designed to avoid conflicts with the blue-white-orange gradient
+## and to be visually distinct from each other (purple/crimson mutations, teal stages)
 ha_col <- HeatmapAnnotation(
   Mutation = mutation_groups,
   Trajectory = trajectory_groups,
   col = list(
-    Mutation = c("G32A" = "#E41A1C", "R403C" = "#377EB8"),
-    Trajectory = c("Early" = "#FEE0D2", "TrajDev" = "#FC9272", "Late" = "#DE2D26")
+    Mutation = HEATMAP_ANNOTATION_COLORS$mutation[c("G32A", "R403C")],
+    Trajectory = HEATMAP_ANNOTATION_COLORS$stage
   ),
   annotation_name_side = "left",
   annotation_name_gp = gpar(fontsize = 9),
@@ -409,11 +402,8 @@ rownames(module_mat) <- module_wide$Module_Clean
 module_order <- gsub("^[0-9]+\\. ", "", names(all_module_genes))
 module_mat <- module_mat[module_order[module_order %in% rownames(module_mat)], ]
 
-# Summary heatmap
-col_fun_summary <- colorRamp2(
-  c(-0.6, -0.3, 0, 0.3, 0.6),
-  c("#0571b0", "#92c5de", "white", "#f4a582", "#ca0020")
-)
+# Summary heatmap (using unified palette from color_config.R)
+col_fun_summary <- logfc_color_scale(limits = c(-0.6, 0.6))
 
 pdf(file.path(out_dir, "Module_Summary_Heatmap.pdf"), width = 6, height = 5)
 

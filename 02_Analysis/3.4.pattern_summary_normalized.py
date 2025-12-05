@@ -33,6 +33,7 @@ warnings.filterwarnings('ignore')
 from Python.config import CONFIG, resolve_path
 from Python.semantic_categories import PATTERN_COLORS, MUTATION_COLORS
 from Python.patterns import add_pattern_classification
+from Python.pattern_definitions import MEANINGFUL_PATTERNS
 
 # =============================================================================
 # SETUP
@@ -46,18 +47,28 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 # =============================================================================
 
 def load_classified_data():
-    """Load pre-classified pathway data"""
-    print("Loading classified pathway data...")
+    """Load pre-classified pathway data from authoritative master table"""
+    print("Loading classified pathway data from master_gsea_table.csv...")
 
-    data_file = resolve_path('03_Results/02_Analysis/Plots/Cross_database_validation/pathways_classified.csv')
-    df = pd.read_csv(data_file)
+    # Use authoritative master table with significance-based patterns
+    data_file = resolve_path('03_Results/02_Analysis/master_gsea_table.csv')
+    df_long = pd.read_csv(data_file)
 
-    # Ensure pattern columns exist
-    if 'Pattern_G32A' not in df.columns or 'Pattern_R403C' not in df.columns:
-        print("  Pattern columns missing - adding classification...")
-        df = add_pattern_classification(df)
+    # Pivot to wide format (one row per pathway)
+    # Pattern columns are consistent across contrasts, so take first occurrence
+    id_cols = ['pathway_id', 'database', 'Description']
+    pattern_cols = ['Pattern_G32A', 'Confidence_G32A', 'Super_Category_G32A',
+                    'Pattern_R403C', 'Confidence_R403C', 'Super_Category_R403C']
+    nes_cols = ['NES_Early_G32A', 'NES_Early_R403C', 'NES_TrajDev_G32A',
+                'NES_TrajDev_R403C', 'NES_Late_G32A', 'NES_Late_R403C']
 
-    print(f"  Loaded {len(df)} pathways from {df['database'].nunique()} databases")
+    keep_cols = id_cols + pattern_cols + nes_cols
+    available_cols = [c for c in keep_cols if c in df_long.columns]
+
+    df = df_long[available_cols].drop_duplicates(subset=['pathway_id', 'database']).copy()
+
+    print(f"  Loaded {len(df)} unique pathways from {df['database'].nunique()} databases")
+    print(f"  Using significance-based pattern classifications")
 
     return df
 
@@ -107,10 +118,9 @@ def create_normalized_pattern_summary(df_counts, show_annotations=True):
     """
     print("\nCreating normalized pattern summary (100% stacked bars)...")
 
-    # Filter to meaningful patterns
-    meaningful_patterns = ['Compensation', 'Progressive', 'Natural_worsening',
-                          'Natural_improvement', 'Late_onset', 'Transient']
-    df_meaningful = df_counts[df_counts['Pattern'].isin(meaningful_patterns)].copy()
+    # Filter to meaningful patterns (exclude Complex for cleaner visualization)
+    patterns_to_plot = [p for p in MEANINGFUL_PATTERNS if p != 'Complex']
+    df_meaningful = df_counts[df_counts['Pattern'].isin(patterns_to_plot)].copy()
 
     if len(df_meaningful) == 0:
         print("  No meaningful patterns found")
@@ -142,7 +152,7 @@ def create_normalized_pattern_summary(df_counts, show_annotations=True):
         pivot_pct = pivot.div(totals, axis=0) * 100  # Convert to percentage
 
         # Order patterns
-        pattern_order = [p for p in meaningful_patterns if p in pivot.columns]
+        pattern_order = [p for p in MEANINGFUL_PATTERNS if p in pivot.columns]
         pivot = pivot[pattern_order]
         pivot_pct = pivot_pct[pattern_order]
 
@@ -203,7 +213,7 @@ def create_normalized_pattern_summary(df_counts, show_annotations=True):
     # Create shared legend
     legend_handles = [
         mpatches.Patch(color=PATTERN_COLORS[p], label=p, alpha=0.85)
-        for p in meaningful_patterns if p in df_meaningful['Pattern'].unique()
+        for p in MEANINGFUL_PATTERNS if p in df_meaningful['Pattern'].unique()
     ]
     fig.legend(handles=legend_handles,
               loc='lower center', ncol=len(legend_handles),
@@ -248,12 +258,11 @@ def create_dual_panel_comparison(df_counts, mutation='G32A'):
     """
     print(f"\nCreating dual-panel comparison for {mutation}...")
 
-    # Filter data
-    meaningful_patterns = ['Compensation', 'Progressive', 'Natural_worsening',
-                          'Natural_improvement', 'Late_onset', 'Transient']
+    # Filter data (exclude Complex for cleaner visualization)
+    patterns_to_plot = [p for p in MEANINGFUL_PATTERNS if p != 'Complex']
     df_mut = df_counts[
         (df_counts['Mutation'] == mutation) &
-        (df_counts['Pattern'].isin(meaningful_patterns))
+        (df_counts['Pattern'].isin(patterns_to_plot))
     ].copy()
 
     if len(df_mut) == 0:
@@ -269,7 +278,7 @@ def create_dual_panel_comparison(df_counts, mutation='G32A'):
         fill_value=0
     ).reindex(databases, fill_value=0)
 
-    pattern_order = [p for p in meaningful_patterns if p in pivot.columns]
+    pattern_order = [p for p in MEANINGFUL_PATTERNS if p in pivot.columns]
     pivot = pivot[pattern_order]
 
     # Calculate proportions
@@ -339,9 +348,9 @@ def create_percentage_heatmap(df_counts):
     """
     print("\nCreating percentage heatmap...")
 
-    meaningful_patterns = ['Compensation', 'Progressive', 'Natural_worsening',
-                          'Natural_improvement', 'Late_onset', 'Transient']
-    df_meaningful = df_counts[df_counts['Pattern'].isin(meaningful_patterns)].copy()
+    # Filter to meaningful patterns (exclude Complex for cleaner visualization)
+    patterns_to_plot = [p for p in MEANINGFUL_PATTERNS if p != 'Complex']
+    df_meaningful = df_counts[df_counts['Pattern'].isin(patterns_to_plot)].copy()
 
     fig, axes = plt.subplots(1, 2, figsize=(14, 8), sharey=True)
 
@@ -358,7 +367,7 @@ def create_percentage_heatmap(df_counts):
 
         databases = sorted(pivot.index)
         pivot = pivot.reindex(databases, fill_value=0)
-        pattern_order = [p for p in meaningful_patterns if p in pivot.columns]
+        pattern_order = [p for p in MEANINGFUL_PATTERNS if p in pivot.columns]
         pivot = pivot[pattern_order]
 
         # Calculate percentages

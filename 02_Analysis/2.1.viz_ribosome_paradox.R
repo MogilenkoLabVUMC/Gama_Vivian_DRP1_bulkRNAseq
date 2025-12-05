@@ -1,9 +1,5 @@
 ###############################################################################
 ##  Ribosome Paradox: Three Pools, Three Fates                              ##
-##  Separation of Concerns: Focused visualization for ribosome story        ##
-###############################################################################
-##  STORY: Biogenesis UP → Synaptic DOWN → Mitochondrial RECOVERY          ##
-##  Shows failed compensation and MitoCarta paradox                         ##
 ###############################################################################
 
 library(here)

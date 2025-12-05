@@ -46,6 +46,7 @@ from Python.semantic_categories import (
 )
 from Python.data_loader import load_classified_pathways, filter_pathways
 from Python.patterns import is_compensation, add_pattern_classification
+from Python.pattern_definitions import MEANINGFUL_PATTERNS, ACTIVE_PATTERNS
 
 # =============================================================================
 # SETUP
@@ -518,10 +519,8 @@ def create_pattern_summary_figure(df):
 
     df_counts = pd.DataFrame(pattern_counts)
 
-    # Filter to meaningful patterns
-    meaningful_patterns = ['Compensation', 'Progressive', 'Natural_worsening',
-                          'Natural_improvement', 'Late_onset', 'Transient', 'Persistent']
-    df_meaningful = df_counts[df_counts['Pattern'].isin(meaningful_patterns)]
+    # Filter to meaningful patterns (using centralized constant)
+    df_meaningful = df_counts[df_counts['Pattern'].isin(MEANINGFUL_PATTERNS)]
 
     # Collect all patterns present across BOTH mutations for legend
     all_patterns_present = set()
@@ -549,7 +548,7 @@ def create_pattern_summary_figure(df):
         # Reindex to ensure all databases are present
         pivot = pivot.reindex(databases, fill_value=0)
 
-        pattern_order = [p for p in meaningful_patterns if p in pivot.columns]
+        pattern_order = [p for p in MEANINGFUL_PATTERNS if p in pivot.columns]
         pivot = pivot[pattern_order]
 
         bottom = np.zeros(len(pivot))
@@ -579,7 +578,7 @@ def create_pattern_summary_figure(df):
     # FIX: Create legend handles manually to include ALL patterns present
     # Position legend at center-right of the plot area
     legend_handles = [mpatches.Patch(color=PATTERN_COLORS[p], label=p, alpha=0.85)
-                     for p in meaningful_patterns if p in all_patterns_present]
+                     for p in MEANINGFUL_PATTERNS if p in all_patterns_present]
     ax1.legend(handles=legend_handles, loc='center right', fontsize=9, framealpha=0.9,
                bbox_to_anchor=(1.0, 0.5))
 
@@ -591,23 +590,26 @@ def create_pattern_summary_figure(df):
         df_mut = df_counts[df_counts['Mutation'] == mutation]
 
         comp_count = df_mut[df_mut['Pattern'] == 'Compensation']['Count'].sum()
-        prog_count = df_mut[df_mut['Pattern'].isin(['Progressive', 'Natural_worsening'])]['Count'].sum()
-        other_count = df_mut[~df_mut['Pattern'].isin(['Compensation', 'Progressive',
+        rev_count = df_mut[df_mut['Pattern'] == 'Sign_reversal']['Count'].sum()
+        worsening_count = df_mut[df_mut['Pattern'].isin(['Progressive', 'Natural_worsening'])]['Count'].sum()
+        other_count = df_mut[~df_mut['Pattern'].isin(['Compensation', 'Sign_reversal', 'Progressive',
                                                        'Natural_worsening', 'Insufficient_data'])]['Count'].sum()
 
         summary_data.append({'Mutation': mutation, 'Pattern': 'Compensation', 'Count': comp_count})
-        summary_data.append({'Mutation': mutation, 'Pattern': 'Worsening', 'Count': prog_count})
+        summary_data.append({'Mutation': mutation, 'Pattern': 'Sign_reversal', 'Count': rev_count})
+        summary_data.append({'Mutation': mutation, 'Pattern': 'Worsening', 'Count': worsening_count})
         summary_data.append({'Mutation': mutation, 'Pattern': 'Other', 'Count': other_count})
 
     df_summary = pd.DataFrame(summary_data)
 
-    x = np.arange(3)
+    x = np.arange(4)
     width = 0.35
 
     for mut_idx, mutation in enumerate(['G32A', 'R403C']):
         df_mut = df_summary[df_summary['Mutation'] == mutation]
         counts = [
             df_mut[df_mut['Pattern'] == 'Compensation']['Count'].values[0],
+            df_mut[df_mut['Pattern'] == 'Sign_reversal']['Count'].values[0],
             df_mut[df_mut['Pattern'] == 'Worsening']['Count'].values[0],
             df_mut[df_mut['Pattern'] == 'Other']['Count'].values[0]
         ]
@@ -620,7 +622,8 @@ def create_pattern_summary_figure(df):
                     str(count), ha='center', va='bottom', fontsize=10, fontweight='bold')
 
     ax2.set_xticks(x)
-    ax2.set_xticklabels(['Compensation\n(rescue)', 'Worsening\n(progressive)', 'Other\n(complex)'],
+    ax2.set_xticklabels(['Compensation\n(rescue)', 'Sign reversal\n(trajectory flip)',
+                         'Worsening\n(progressive)', 'Other\n(complex)'],
                         fontsize=11)
     ax2.set_ylabel('Number of Pathways', fontsize=11)
     ax2.set_title('B. Summary: Compensation vs Worsening', fontsize=12, fontweight='bold')

@@ -10,11 +10,9 @@ Thresholds tested:
 - NES_STRONG: 0.8, 1.0 (default), 1.2
 - IMPROVEMENT_RATIO: 0.6, 0.7 (default), 0.8
 - WORSENING_RATIO: 1.25, 1.3 (default), 1.4
-
-Author: Claude Code
-Date: 2025-11-26
 """
 
+import sys
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -22,6 +20,13 @@ from typing import Tuple, Optional, Dict, List
 from itertools import product
 import matplotlib.pyplot as plt
 import seaborn as sns
+
+# Add module path for project imports
+sys.path.insert(0, str(Path(__file__).parent.parent / '01_Scripts'))
+from Python.pattern_definitions import MEANINGFUL_PATTERNS
+
+# Import unified color configuration
+from Python.color_config import HEATMAP_ANNOTATION_COLORS, create_diverging_cmap
 
 # =============================================================================
 # PATHS
@@ -106,6 +111,13 @@ def classify_pattern_parameterized(
         # Active patterns - check BEFORE Transient
         if trajdev_sig and trajdev_opposes and improved:
             return ('Compensation', confidence)
+
+        # Sign_reversal: TrajDev opposes AND sign flipped between Early and Late
+        if trajdev_sig and trajdev_opposes:
+            sign_flip = np.sign(early_nes) != np.sign(late_nes)
+            late_substantial = late_abs > nes_effect
+            if sign_flip and late_substantial:
+                return ('Sign_reversal', confidence)
 
         if trajdev_sig and trajdev_amplifies and worsened:
             return ('Progressive', confidence)
@@ -219,6 +231,7 @@ def run_sensitivity_analysis(df: pd.DataFrame, mutations: List[str] = ['G32A', '
 
             # Calculate super-category percentages
             active_comp = pattern_counts.get('Compensation', 0)
+            active_rev = pattern_counts.get('Sign_reversal', 0)
             active_prog = pattern_counts.get('Progressive', 0)
             passive = (pattern_counts.get('Natural_improvement', 0) +
                       pattern_counts.get('Natural_worsening', 0))
@@ -237,6 +250,8 @@ def run_sensitivity_analysis(df: pd.DataFrame, mutations: List[str] = ['G32A', '
                 'n_pathways': total,
                 'Compensation': active_comp,
                 'Compensation_pct': active_comp / total * 100,
+                'Sign_reversal': active_rev,
+                'Sign_reversal_pct': active_rev / total * 100,
                 'Progressive': active_prog,
                 'Progressive_pct': active_prog / total * 100,
                 'Natural_improvement': pattern_counts.get('Natural_improvement', 0),
@@ -379,17 +394,22 @@ def create_summary_figure(sensitivity_df: pd.DataFrame, claims_df: pd.DataFrame,
     # Get default combination for reference
     default_data = sensitivity_df[sensitivity_df['is_default']]
 
+    # Use unified mutation colors (distinct from diverging gradient)
+    mutation_colors = HEATMAP_ANNOTATION_COLORS['mutation']
+    g32a_color = mutation_colors['G32A']
+    r403c_color = mutation_colors['R403C']
+
     # 1. Compensation % across all combinations (boxplot)
     ax = axes[0, 0]
     g32a_comp = sensitivity_df[sensitivity_df['mutation'] == 'G32A']['Compensation_pct']
     r403c_comp = sensitivity_df[sensitivity_df['mutation'] == 'R403C']['Compensation_pct']
 
     bp = ax.boxplot([g32a_comp, r403c_comp], labels=['G32A', 'R403C'], patch_artist=True)
-    bp['boxes'][0].set_facecolor('#1f77b4')
-    bp['boxes'][1].set_facecolor('#ff7f0e')
+    bp['boxes'][0].set_facecolor(g32a_color)
+    bp['boxes'][1].set_facecolor(r403c_color)
 
     # Add default values as stars
-    for i, (mut, col) in enumerate([(g32a_comp, '#1f77b4'), (r403c_comp, '#ff7f0e')]):
+    for i, (mut, col) in enumerate([(g32a_comp, g32a_color), (r403c_comp, r403c_color)]):
         default_val = default_data[default_data['mutation'] == ['G32A', 'R403C'][i]]['Compensation_pct'].values[0]
         ax.scatter([i+1], [default_val], marker='*', s=200, c='red', zorder=5, label='Default' if i==0 else '')
 
@@ -399,8 +419,9 @@ def create_summary_figure(sensitivity_df: pd.DataFrame, claims_df: pd.DataFrame,
 
     # 2. Pattern distribution comparison (default thresholds)
     ax = axes[0, 1]
-    patterns = ['Compensation', 'Progressive', 'Natural_improvement',
-                'Natural_worsening', 'Late_onset', 'Transient', 'Complex']
+    # Use centralized pattern list (Note: this script's classify_pattern_parameterized
+    # may need Sign_reversal added to match pattern_definitions.py)
+    patterns = MEANINGFUL_PATTERNS
 
     x = np.arange(len(patterns))
     width = 0.35
@@ -411,8 +432,8 @@ def create_summary_figure(sensitivity_df: pd.DataFrame, claims_df: pd.DataFrame,
     g32a_vals = [g32a_default[p] for p in patterns]
     r403c_vals = [r403c_default[p] for p in patterns]
 
-    ax.bar(x - width/2, g32a_vals, width, label='G32A', color='#1f77b4')
-    ax.bar(x + width/2, r403c_vals, width, label='R403C', color='#ff7f0e')
+    ax.bar(x - width/2, g32a_vals, width, label='G32A', color=g32a_color)
+    ax.bar(x + width/2, r403c_vals, width, label='R403C', color=r403c_color)
     ax.set_xticks(x)
     ax.set_xticklabels(patterns, rotation=45, ha='right')
     ax.set_ylabel('Number of Pathways')
@@ -458,7 +479,7 @@ def create_summary_figure(sensitivity_df: pd.DataFrame, claims_df: pd.DataFrame,
             comp_vals,
             alpha=0.3,
             s=50,
-            c=['#1f77b4', '#ff7f0e'][i]
+            c=[g32a_color, r403c_color][i]
         )
 
         # Add range annotation

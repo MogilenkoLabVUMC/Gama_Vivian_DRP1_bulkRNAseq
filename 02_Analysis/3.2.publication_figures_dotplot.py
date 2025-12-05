@@ -45,6 +45,11 @@ from Python.semantic_categories import (
 )
 from Python.data_loader import load_classified_pathways, filter_pathways
 from Python.patterns import is_compensation, add_pattern_classification
+from Python.pattern_definitions import MEANINGFUL_PATTERNS, ACTIVE_PATTERNS
+
+# Import unified color config for heatmap annotation colors
+# Use these when mutations appear alongside NES gradient to avoid color confusion
+from Python.color_config import HEATMAP_ANNOTATION_COLORS
 
 # =============================================================================
 # SETUP
@@ -563,10 +568,8 @@ def create_pattern_summary_figure(df):
 
     df_counts = pd.DataFrame(pattern_counts)
 
-    # Filter to meaningful patterns
-    meaningful_patterns = ['Compensation', 'Progressive', 'Natural_worsening',
-                          'Natural_improvement', 'Late_onset', 'Transient', 'Persistent']
-    df_meaningful = df_counts[df_counts['Pattern'].isin(meaningful_patterns)]
+    # Filter to meaningful patterns (using centralized constant)
+    df_meaningful = df_counts[df_counts['Pattern'].isin(MEANINGFUL_PATTERNS)]
 
     # Collect all patterns present across BOTH mutations for legend
     all_patterns_present = set()
@@ -576,6 +579,10 @@ def create_pattern_summary_figure(df):
 
     # Create figure
     fig, axes = plt.subplots(1, 2, figsize=(14, 8), sharey=False)
+
+    # Use heatmap annotation colors for mutations (distinct from NES gradient blue/orange)
+    # This prevents visual confusion when figures are viewed alongside NES heatmaps
+    mutation_bar_colors = HEATMAP_ANNOTATION_COLORS['mutation']
 
     # Panel A: Counts by database
     ax1 = axes[0]
@@ -594,7 +601,7 @@ def create_pattern_summary_figure(df):
         # Reindex to ensure all databases are present
         pivot = pivot.reindex(databases, fill_value=0)
 
-        pattern_order = [p for p in meaningful_patterns if p in pivot.columns]
+        pattern_order = [p for p in MEANINGFUL_PATTERNS if p in pivot.columns]
         pivot = pivot[pattern_order]
 
         bottom = np.zeros(len(pivot))
@@ -608,12 +615,13 @@ def create_pattern_summary_figure(df):
                 bottom += pivot[pattern].values
 
         # Add mutation labels next to each bar
+        # Use heatmap annotation colors for consistency with Panel B
         for i, db in enumerate(databases):
             bar_total = pivot.loc[db].sum() if db in pivot.index else 0
             if bar_total > 0:
                 ax1.text(bar_total + 1, i + offset, mutation[:4],
                         fontsize=8, fontweight='bold', va='center',
-                        color=MUTATION_COLORS[mutation])
+                        color=mutation_bar_colors[mutation])
 
     ax1.set_yticks(x)
     ax1.set_yticklabels(databases, fontsize=10)
@@ -622,7 +630,7 @@ def create_pattern_summary_figure(df):
 
     # Create legend handles manually to include ALL patterns present
     legend_handles = [mpatches.Patch(color=PATTERN_COLORS[p], label=p, alpha=0.85)
-                     for p in meaningful_patterns if p in all_patterns_present]
+                     for p in MEANINGFUL_PATTERNS if p in all_patterns_present]
     ax1.legend(handles=legend_handles, loc='center right', fontsize=9, framealpha=0.9,
                bbox_to_anchor=(1.0, 0.5))
 
@@ -634,36 +642,40 @@ def create_pattern_summary_figure(df):
         df_mut = df_counts[df_counts['Mutation'] == mutation]
 
         comp_count = df_mut[df_mut['Pattern'] == 'Compensation']['Count'].sum()
-        prog_count = df_mut[df_mut['Pattern'].isin(['Progressive', 'Natural_worsening'])]['Count'].sum()
-        other_count = df_mut[~df_mut['Pattern'].isin(['Compensation', 'Progressive',
+        rev_count = df_mut[df_mut['Pattern'] == 'Sign_reversal']['Count'].sum()
+        worsening_count = df_mut[df_mut['Pattern'].isin(['Progressive', 'Natural_worsening'])]['Count'].sum()
+        other_count = df_mut[~df_mut['Pattern'].isin(['Compensation', 'Sign_reversal', 'Progressive',
                                                        'Natural_worsening', 'Insufficient_data'])]['Count'].sum()
 
         summary_data.append({'Mutation': mutation, 'Pattern': 'Compensation', 'Count': comp_count})
-        summary_data.append({'Mutation': mutation, 'Pattern': 'Worsening', 'Count': prog_count})
+        summary_data.append({'Mutation': mutation, 'Pattern': 'Sign_reversal', 'Count': rev_count})
+        summary_data.append({'Mutation': mutation, 'Pattern': 'Worsening', 'Count': worsening_count})
         summary_data.append({'Mutation': mutation, 'Pattern': 'Other', 'Count': other_count})
 
     df_summary = pd.DataFrame(summary_data)
 
-    x = np.arange(3)
+    x = np.arange(4)
     width = 0.35
 
     for mut_idx, mutation in enumerate(['G32A', 'R403C']):
         df_mut = df_summary[df_summary['Mutation'] == mutation]
         counts = [
             df_mut[df_mut['Pattern'] == 'Compensation']['Count'].values[0],
+            df_mut[df_mut['Pattern'] == 'Sign_reversal']['Count'].values[0],
             df_mut[df_mut['Pattern'] == 'Worsening']['Count'].values[0],
             df_mut[df_mut['Pattern'] == 'Other']['Count'].values[0]
         ]
 
         bars = ax2.bar(x + (mut_idx - 0.5) * width, counts, width,
-                      label=mutation, color=MUTATION_COLORS[mutation], alpha=0.85)
+                      label=mutation, color=mutation_bar_colors[mutation], alpha=0.85)
 
         for bar, count in zip(bars, counts):
             ax2.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 2,
                     str(count), ha='center', va='bottom', fontsize=10, fontweight='bold')
 
     ax2.set_xticks(x)
-    ax2.set_xticklabels(['Compensation\n(rescue)', 'Worsening\n(progressive)', 'Other\n(complex)'],
+    ax2.set_xticklabels(['Compensation\n(rescue)', 'Sign reversal\n(trajectory flip)',
+                         'Worsening\n(progressive)', 'Other\n(complex)'],
                         fontsize=11)
     ax2.set_ylabel('Number of Pathways', fontsize=11)
     ax2.set_title('B. Summary: Compensation vs Worsening', fontsize=12, fontweight='bold')

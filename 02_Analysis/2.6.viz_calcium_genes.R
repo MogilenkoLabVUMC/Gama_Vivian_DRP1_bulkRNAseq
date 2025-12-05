@@ -33,6 +33,9 @@ for (p in required_pkgs) {
   library(p, character.only = TRUE)
 }
 
+# Load unified color configuration
+source(here::here("01_Scripts/R_scripts/color_config.R"))
+
 # -------------------------------------------------------------------- #
 # 2.  Load checkpoints from main pipeline                              #
 # -------------------------------------------------------------------- #
@@ -88,14 +91,19 @@ if (length(calcium_genes_present) > 0) {
   # 4.1  Heatmap of expression across all samples                        #
   # -------------------------------------------------------------------- #
   message("  • Creating expression heatmap...")
+
+  # Use unified color configuration for heatmap annotations
+  # This avoids conflicts between diverging gradient and categorical colors
+  heatmap_ann_colors <- get_heatmap_ann_colors()
+
   pdf(file.path(calcium_dir, "calcium_genes_expression_heatmap.pdf"),
       width = 12, height = length(calcium_genes_present) * 0.4 + 3)
   pheatmap(
     calcium_expr,
     main = "Expression of Calcium Signaling Genes",
     annotation_col = annot,
-    annotation_colors = ann_colors,
-    color = colorRampPalette(rev(brewer.pal(11, "RdBu")))(100),
+    annotation_colors = heatmap_ann_colors,
+    color = get_diverging_palette(100),  # Unified Blue-White-Orange gradient
     border_color = NA,
     fontsize = 10,
     fontsize_row = 10,

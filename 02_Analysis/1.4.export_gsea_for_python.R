@@ -274,7 +274,7 @@ write.csv(
 )
 message("  ✓ Saved: gsea_results_long.csv")
 
-# Save wide format (for heatmap)
+# Save wide format (for heatmap and p.adjust column merging)
 write.csv(
   wide_format,
   file.path(output_dir, "gsea_results_wide.csv"),
@@ -282,69 +282,8 @@ write.csv(
 )
 message("  ✓ Saved: gsea_results_wide.csv")
 
-# Save contrast mapping
-write.csv(
-  contrast_mapping,
-  file.path(output_dir, "contrast_mapping.csv"),
-  row.names = FALSE
-)
-message("  ✓ Saved: contrast_mapping.csv")
-
 # -------------------------------------------------------------------- #
-# 11. Create filtered datasets for interesting patterns                #
-# -------------------------------------------------------------------- #
-message("\n🔍 Creating filtered datasets for interesting patterns...")
-
-# Filter for significant pathways (padj < 0.05 in at least one contrast)
-significant_pathways <- all_combined %>%
-  group_by(pathway_id) %>%
-  filter(any(p.adjust < 0.05, na.rm = TRUE)) %>%
-  ungroup()
-
-message("  Significant pathways: ", length(unique(significant_pathways$pathway_id)))
-
-# Filter for trajectory-relevant pathways (significant in Early, TrajDev, or Late)
-# Note: trajectory_contrasts already defined earlier in section 9
-
-trajectory_pathways <- all_combined %>%
-  filter(contrast %in% trajectory_contrasts) %>%
-  group_by(pathway_id) %>%
-  filter(any(p.adjust < 0.05, na.rm = TRUE)) %>%
-  ungroup()
-
-message("  Trajectory-relevant pathways: ", length(unique(trajectory_pathways$pathway_id)))
-
-# Save filtered datasets
-write.csv(
-  significant_pathways,
-  file.path(output_dir, "gsea_significant.csv"),
-  row.names = FALSE
-)
-message("  ✓ Saved: gsea_significant.csv")
-
-write.csv(
-  trajectory_pathways,
-  file.path(output_dir, "gsea_trajectory.csv"),
-  row.names = FALSE
-)
-message("  ✓ Saved: gsea_trajectory.csv")
-
-# NEW: Export ALL trajectory pathways (including non-significant)
-# This enables Python to distinguish "tested but not significant" from "not tested"
-trajectory_all <- all_combined %>%
-  filter(contrast %in% trajectory_contrasts)
-
-write.csv(
-  trajectory_all,
-  file.path(output_dir, "gsea_trajectory_all.csv"),
-  row.names = FALSE
-)
-message("  ✓ Saved: gsea_trajectory_all.csv (all tested pathways, includes ever_significant flags)")
-message("    Total trajectory records: ", nrow(trajectory_all))
-message("    Significant in >=1 contrast: ", sum(trajectory_all$ever_significant_trajectory))
-
-# -------------------------------------------------------------------- #
-# 12. Summary statistics                                               #
+# 11. Summary statistics                                               #
 # -------------------------------------------------------------------- #
 message("\n", paste(rep("=", 78), collapse = ""))
 message("📊 GSEA Export Summary")
@@ -363,8 +302,5 @@ print(summary_stats)
 message("\n✨ Export complete!")
 message("📁 Output directory: ", output_dir)
 message("   - gsea_results_long.csv (complete data with ever_significant flags)")
-message("   - gsea_results_wide.csv (pivot table)")
-message("   - gsea_significant.csv (filtered for significance)")
-message("   - gsea_trajectory.csv (Early/TrajDev/Late, significant only)")
-message("   - gsea_trajectory_all.csv (Early/TrajDev/Late, ALL tested pathways)")
-message("   - contrast_mapping.csv (old to new framework)")
+message("   - gsea_results_wide.csv (pivot table with p.adjust columns)")
+message("\n📝 Next step: Run 1.5.create_master_pathway_table.py to create master_gsea_table.csv")

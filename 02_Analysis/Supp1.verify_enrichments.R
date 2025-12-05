@@ -2,7 +2,7 @@
 ##  Enrichment Verification & Documentation                                 ##
 ##  Loads checkpoints, NO re-running of GSEA                                 ##
 ###############################################################################
-## Performs systematic verification analyses:
+## Perform systematic verification analyses:
 ##  1. Calcium pathway enrichment verification across all databases
 ##  2. Gene list intersection verification (baseline9 vs mat38)
 ##  3. Ribosome pathway statistics documentation

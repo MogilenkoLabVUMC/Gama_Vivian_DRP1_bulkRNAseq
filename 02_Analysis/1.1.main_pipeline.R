@@ -127,6 +127,9 @@ source_if_present(config$helper_root, "scripts/GSEA/GSEA_plotting/plot_all_gsea_
 ## Load shared utilities (DRY helpers) - now in toolkit for reusability
 source_if_present(config$helper_root, "scripts/utils_plotting.R")
 
+## Load unified color configuration (single source of truth for all colors)
+source_if_present("01_Scripts/R_scripts/color_config.R")
+
 # -------------------------------------------------------------------- #
 # 2.  Read & pre-process data                                          #
 # -------------------------------------------------------------------- #
@@ -237,31 +240,84 @@ logCPM <- cpm(DGE, log = TRUE)
 ordered_cor <- cor(logCPM)[ordered_samples, ordered_samples]
 
 annot <- DGE$samples[ordered_samples, c("genotype","days")]
-ann_colors <- list(
-  genotype = c(Control = "#1B9E77", G32A = "#D95F02", R403C = "#7570B3"),
-  days     = c(D35     = "#E7298A", D65 = "#66A61E"))
+## Use unified heatmap annotation colors (from color_config.R)
+## These colors are specifically designed to avoid conflicts with the diverging gradient
+ann_colors <- get_heatmap_ann_colors()
 
 pdf(file.path(qc_dir, "sample_correlation_heatmap_ordered.pdf"), 12, 10)
 pheatmap(ordered_cor,
          annotation_row  = annot, annotation_col = annot,
          annotation_colors = ann_colors,
-         color = colorRampPalette(brewer.pal(9,"YlOrBr"))(100),
+         color = get_correlation_palette(100),  # Unified sequential palette for correlations
          cluster_rows = FALSE, cluster_cols = FALSE,
          border_color = NA)
 dev.off()
 
-## MDS plot -------------------------------------------------------------
-pdf(file.path(qc_dir,"MDS_plot.pdf"), 10, 8)
-plotMDS(v, col = ann_colors$genotype[annot$genotype],
-        pch = ifelse(annot$days=="D35", 16, 17),
-        cex = 1.4)
-leg_lbl <- unique(paste(annot$genotype, annot$days))
-leg_col <- ann_colors$genotype[ sub(" .*", "", leg_lbl) ]   # map back to genotype
-leg_pch <- ifelse(grepl("D35$", leg_lbl), 16, 17)
+## MDS plot (publication-ready) -----------------------------------------
+mds <- plotMDS(v, plot = FALSE)
+mds_df <- data.frame(
+  Dim1 = mds$x,
+  Dim2 = mds$y,
+  Genotype = annot$genotype,
+  Timepoint = annot$days
+)
+mds_var <- round(mds$var.explained[1:2] * 100, 0)
 
-legend("topright", legend = leg_lbl,
-       col = leg_col, pch = leg_pch,
-       bty = "n", cex = 1.0, pt.cex = 1.4)
+mds_plot <- ggplot(mds_df, aes(x = Dim1, y = Dim2, color = Genotype, shape = Timepoint)) +
+  geom_point(size = 4, stroke = 1) +
+  scale_color_manual(values = ann_colors$genotype) +
+  scale_shape_manual(values = c(D35 = 16, D65 = 17)) +
+  labs(
+    x = sprintf("Leading logFC dim 1 (%s%%)", mds_var[1]),
+    y = sprintf("Leading logFC dim 2 (%s%%)", mds_var[2])
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    panel.grid.minor = element_blank(),
+    panel.border = element_rect(color = "grey70", fill = NA, linewidth = 0.5),
+    legend.position = "right",
+    legend.background = element_rect(color = "grey80", fill = "white", linewidth = 0.3),
+    axis.title = element_text(face = "bold"),
+    legend.title = element_text(face = "bold")
+  ) +
+  coord_fixed()
+
+pdf(file.path(qc_dir, "MDS_plot.pdf"), 8, 6)
+print(mds_plot)
+dev.off()
+
+## PCA plot (publication-ready) ----------------------------------------
+pca_res <- prcomp(t(logCPM), scale. = TRUE)
+pct_var <- round(100 * pca_res$sdev^2 / sum(pca_res$sdev^2), 1)
+
+pca_df <- data.frame(
+  PC1 = pca_res$x[, 1],
+  PC2 = pca_res$x[, 2],
+  Genotype = annot$genotype,
+  Timepoint = annot$days
+)
+
+pca_plot <- ggplot(pca_df, aes(x = PC1, y = PC2, color = Genotype, shape = Timepoint)) +
+  geom_point(size = 4, stroke = 1) +
+  scale_color_manual(values = ann_colors$genotype) +
+  scale_shape_manual(values = c(D35 = 16, D65 = 17)) +
+  labs(
+    x = sprintf("PC1 (%s%% variance)", pct_var[1]),
+    y = sprintf("PC2 (%s%% variance)", pct_var[2])
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    panel.grid.minor = element_blank(),
+    panel.border = element_rect(color = "grey70", fill = NA, linewidth = 0.5),
+    legend.position = "right",
+    legend.background = element_rect(color = "grey80", fill = "white", linewidth = 0.3),
+    axis.title = element_text(face = "bold"),
+    legend.title = element_text(face = "bold")
+  ) +
+  coord_fixed()
+
+pdf(file.path(qc_dir, "PCA_plot.pdf"), 8, 6)
+print(pca_plot)
 dev.off()
 
 # ------------------------------------------------------------
@@ -406,7 +462,7 @@ deg_long <- tidyr::pivot_longer(deg_counts,
 
 ## -------- plot ------------------------------------------------------
 pdf(file.path(qc_dir,"DE_gene_counts.pdf"), 10, 6, onefile = TRUE)
-ggplot(deg_long,
+print(ggplot(deg_long,
        aes(Contrast, Count, fill = Direction)) +
   geom_col(position = position_dodge(width = .8), width = .7) +
   geom_text(aes(label = Count),
@@ -417,7 +473,7 @@ ggplot(deg_long,
   theme_minimal(base_size = 12) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         panel.grid.major.x = element_blank()) +
-  labs(y = "gene count", x = NULL, fill = "")
+  labs(y = "gene count", x = NULL, fill = ""))
 dev.off()
 
 
@@ -578,10 +634,10 @@ message("✓ SynGO GSEA complete")
 # -------------------------------------------------------------------- #
 # 8.  MitoCarta GSEA - MOVED TO SEPARATE SCRIPT                        #
 # -------------------------------------------------------------------- #
-# NOTE: MitoCarta GSEA analysis has been moved to 2.add_MitoCarta.R
+# NOTE: MitoCarta GSEA analysis has been moved to 1.3.add_mitocarta.R
 #       Run that script separately after this main pipeline completes.
 #       This separation improves modularity and debugging.
-message("\n📝 MitoCarta GSEA analysis moved to 2.add_MitoCarta.R")
+message("\n📝 MitoCarta GSEA analysis moved to 1.3.add_mitocarta.R")
 message("   Run that script separately after this pipeline completes.")
 
 ###############################################################################
@@ -742,7 +798,7 @@ enr_mat38 <- synGO_enrich_symbol(mat38,     "mat38",
 # 9.  Calcium genes focus                                              #
 # -------------------------------------------------------------------- #
 message("🔬 Running calcium gene analysis (separate script)...")
-source(here::here("02_Analysis/viz_calcium_genes.R"))
+source(here::here("02_Analysis/2.6.viz_calcium_genes.R"))
 
 
 # -------------------------------------------------------------------- #

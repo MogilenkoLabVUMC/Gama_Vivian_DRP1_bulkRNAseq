@@ -12,7 +12,7 @@ Changes in v2:
 - Consistent filter UI across both views
 
 Usage:
-    python3 02_Analysis/10.prepare_explorer_data.py
+    python3 02_Analysis/4.4.prepare_explorer_data.py
 
 Output:
     03_Results/02_Analysis/Explorer/DRP1_Pathway_Explorer.html
@@ -61,7 +61,6 @@ COLORS = {
         "Natural_improvement": "#56B4E9",
         "Late_onset": "#CC79A7",
         "Transient": "#0072B2",
-        "Persistent": "#999999",
         "Complex": "#F0E442"
     },
     "databases": {
@@ -524,7 +523,6 @@ def generate_html(pathway_data, gsva_wide, gsva_long, metadata, libraries):
         .pattern-Natural_improvement {{ background: #56B4E9; color: black; }}
         .pattern-Late_onset {{ background: #CC79A7; color: white; }}
         .pattern-Transient {{ background: #0072B2; color: white; }}
-        .pattern-Persistent {{ background: #999999; color: white; }}
         .pattern-Complex {{ background: #F0E442; color: black; }}
 
         .sig-indicator {{

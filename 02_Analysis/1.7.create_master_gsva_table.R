@@ -321,9 +321,10 @@ message(sprintf("  ✓ Master table created: %d rows × %d columns",
 # PATTERN CLASSIFICATION FRAMEWORK (aligned with pattern_definitions.py)
 # =====================================================================
 #
-# This implements the canonical 7-pattern classification system:
+# This implements the canonical 8-pattern classification system:
 #
-# - Compensation: Active adaptive response (TrajDev significant + opposes Early)
+# - Compensation: Active adaptive response (TrajDev significant + opposes Early + improved)
+# - Sign_reversal: Active trajectory reversal (TrajDev opposes + sign flipped between Early/Late)
 # - Progressive: Active worsening (TrajDev significant + amplifies Early)
 # - Natural_worsening: Passive deterioration (TrajDev not significant + worsened)
 # - Natural_improvement: Passive recovery (TrajDev not significant + improved)
@@ -442,6 +443,16 @@ classify_gsva_pattern <- function(early_div, early_padj, trajdev, late_div, late
       return(list(pattern = "Compensation", confidence = confidence))
     }
 
+    # Sign_reversal: TrajDev opposes AND sign flipped between Early and Late
+    # This captures pathways where the defect direction completely reversed
+    if (trajdev_sig & trajdev_opposes) {
+      sign_flip <- sign(early_div) != sign(late_div)
+      late_substantial <- late_abs > GSVA_EFFECT
+      if (sign_flip & late_substantial) {
+        return(list(pattern = "Sign_reversal", confidence = confidence))
+      }
+    }
+
     if (trajdev_sig & trajdev_amplifies & worsened) {
       return(list(pattern = "Progressive", confidence = confidence))
     }
@@ -510,9 +521,12 @@ pattern_summary <- pattern_summary %>%
   )
 
 # Add super-categories (simplified for main figures/text)
-# Mapping aligned with Python pattern_definitions.py
+# IMPORTANT: This classification must stay in sync with:
+#   01_Scripts/Python/pattern_definitions.py (canonical source)
+# See docs/PATTERN_CLASSIFICATION.md for full specification.
 super_category_map <- c(
   "Compensation" = "Active_Compensation",
+  "Sign_reversal" = "Active_Reversal",
   "Progressive" = "Active_Progression",
   "Natural_improvement" = "Passive",
   "Natural_worsening" = "Passive",

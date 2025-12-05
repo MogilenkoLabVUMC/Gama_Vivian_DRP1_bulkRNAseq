@@ -29,7 +29,9 @@ warnings.filterwarnings('ignore')
 
 # Import project modules
 from Python.config import CONFIG, resolve_path
-from Python.pattern_definitions import add_pattern_classification, add_super_category_columns
+from Python.pattern_definitions import (
+    add_pattern_classification, add_super_category_columns, PATTERN_SEVERITY_ORDER
+)
 
 # =============================================================================
 # SETUP
@@ -66,13 +68,39 @@ def load_pattern_classifications():
     """
     print("\nLoading trajectory data for pattern classification...")
 
-    pattern_file = resolve_path('03_Results/02_Analysis/Plots/Cross_database_validation/pathways_classified.csv')
+    # Load from Python exports (wide format with NES and p.adjust columns)
+    pattern_file = resolve_path(CONFIG['classified_data'])
     df_patterns = pd.read_csv(pattern_file)
 
-    print(f"  Loaded {len(df_patterns)} pathways")
+    print(f"  Loaded {len(df_patterns)} pathways from gsea_results_wide.csv")
+
+    # Rename columns from contrast names to stage names for pattern classification
+    # Early = D35, Late = D65, TrajDev = Maturation_specific
+    column_mapping = {
+        # G32A NES columns
+        'NES_G32A_vs_Ctrl_D35': 'NES_Early_G32A',
+        'NES_G32A_vs_Ctrl_D65': 'NES_Late_G32A',
+        'NES_Maturation_G32A_specific': 'NES_TrajDev_G32A',
+        # R403C NES columns
+        'NES_R403C_vs_Ctrl_D35': 'NES_Early_R403C',
+        'NES_R403C_vs_Ctrl_D65': 'NES_Late_R403C',
+        'NES_Maturation_R403C_specific': 'NES_TrajDev_R403C',
+        # G32A p.adjust columns
+        'p.adjust_G32A_vs_Ctrl_D35': 'p.adjust_Early_G32A',
+        'p.adjust_G32A_vs_Ctrl_D65': 'p.adjust_Late_G32A',
+        'p.adjust_Maturation_G32A_specific': 'p.adjust_TrajDev_G32A',
+        # R403C p.adjust columns
+        'p.adjust_R403C_vs_Ctrl_D35': 'p.adjust_Early_R403C',
+        'p.adjust_R403C_vs_Ctrl_D65': 'p.adjust_Late_R403C',
+        'p.adjust_Maturation_R403C_specific': 'p.adjust_TrajDev_R403C',
+    }
+
+    # Only rename columns that exist
+    existing_mapping = {k: v for k, v in column_mapping.items() if k in df_patterns.columns}
+    df_patterns = df_patterns.rename(columns=existing_mapping)
+    print(f"  Renamed {len(existing_mapping)} columns to stage names")
 
     # Select columns needed for pattern classification
-    # Note: We load NES and p.adjust columns to recalculate patterns
     data_cols = ['pathway_id', 'database', 'Description',
                  'NES_Early_G32A', 'NES_Early_R403C',
                  'NES_Late_G32A', 'NES_Late_R403C',
@@ -153,14 +181,10 @@ def classify_change_consistency(row):
 
     # Different patterns
     else:
-        # Check if one is more severe
-        severity_order = ['Insufficient_data', 'Complex',
-                         'Natural_improvement', 'Natural_worsening',
-                         'Transient', 'Late_onset', 'Progressive', 'Compensation']
-
+        # Check if one is more severe (using centralized severity order)
         try:
-            g32a_severity = severity_order.index(pattern_g32a)
-            r403c_severity = severity_order.index(pattern_r403c)
+            g32a_severity = PATTERN_SEVERITY_ORDER.index(pattern_g32a)
+            r403c_severity = PATTERN_SEVERITY_ORDER.index(pattern_r403c)
 
             if g32a_severity > r403c_severity:
                 return f'Inconsistent_G32A-more-severe'

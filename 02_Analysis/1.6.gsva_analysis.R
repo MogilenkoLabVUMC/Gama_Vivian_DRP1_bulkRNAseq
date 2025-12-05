@@ -105,21 +105,21 @@ for (db_name in names(msigdb_collections)) {
 
   # Filter by subcategory if needed
   if (db_name == "kegg") {
-    m_df <- m_df %>% filter(gs_subcat == "CP:KEGG")
+    m_df <- m_df %>% filter(gs_subcollection == "CP:KEGG")
   } else if (db_name == "reactome") {
-    m_df <- m_df %>% filter(gs_subcat == "CP:REACTOME")
+    m_df <- m_df %>% filter(gs_subcollection == "CP:REACTOME")
   } else if (db_name == "canon") {
-    m_df <- m_df %>% filter(gs_subcat == "CP")
+    m_df <- m_df %>% filter(gs_subcollection == "CP")
   } else if (db_name == "gobp") {
-    m_df <- m_df %>% filter(gs_subcat == "GO:BP")
+    m_df <- m_df %>% filter(gs_subcollection == "GO:BP")
   } else if (db_name == "gocc") {
-    m_df <- m_df %>% filter(gs_subcat == "GO:CC")
+    m_df <- m_df %>% filter(gs_subcollection == "GO:CC")
   } else if (db_name == "gomf") {
-    m_df <- m_df %>% filter(gs_subcat == "GO:MF")
+    m_df <- m_df %>% filter(gs_subcollection == "GO:MF")
   } else if (db_name == "cgp") {
-    m_df <- m_df %>% filter(gs_subcat == "CGP")
+    m_df <- m_df %>% filter(gs_subcollection == "CGP")
   } else if (db_name == "wiki") {
-    m_df <- m_df %>% filter(gs_subcat == "CP:WIKIPATHWAYS")
+    m_df <- m_df %>% filter(gs_subcollection == "CP:WIKIPATHWAYS")
   }
 
   # Convert to named list

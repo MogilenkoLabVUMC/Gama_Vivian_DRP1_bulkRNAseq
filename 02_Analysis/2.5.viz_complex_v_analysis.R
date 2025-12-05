@@ -1,9 +1,5 @@
 ###############################################################################
 ##  Complex V (ATP Synthase) Analysis: Direct Energy Crisis                 ##
-##  Separation of Concerns: Focused on ATP production machinery             ##
-###############################################################################
-##  STORY: Complex V is THE most vulnerable OXPHOS complex                  ##
-##  Shows direct link between DRP1 mutation and ATP production failure      ##
 ###############################################################################
 
 library(here)
@@ -13,6 +9,9 @@ library(tidyr)
 library(patchwork)
 library(ComplexHeatmap)
 library(circlize)
+
+# Load unified color configuration
+source(here("01_Scripts/R_scripts/color_config.R"))
 
 message("📂 Loading checkpoints...")
 checkpoint_dir <- here("03_Results/02_Analysis/checkpoints")
@@ -136,13 +135,8 @@ p_cv_pathways <- ggplot(complex_v_data,
     shape = 21, color = "black", fill = NA, stroke = 1.5, alpha = 1
   ) +
 
-  scale_color_gradient2(
-    low = "#0571b0", mid = "white", high = "#ca0020",
-    midpoint = 0,
-    name = "NES",
-    limits = c(-3, 3),
-    oob = scales::squish
-  ) +
+  # Using unified NES color scale from color_config.R
+  nes_ggplot_scale(limits = c(-3, 3), name = "NES") +
 
   scale_size_continuous(
     range = c(3, 10),
@@ -222,11 +216,8 @@ if (length(cv_genes_present) > 0) {
   colnames(logfc_g32a) <- c("Early", "TrajDev", "Late")
   colnames(logfc_r403c) <- c("Early", "TrajDev", "Late")
 
-  # Color scheme matching Publication_Figures
-  col_fun <- colorRamp2(
-    c(-0.6, 0, 0.6),
-    c("#2166AC", "#F7F7F7", "#B35806")
-  )
+  # Color scheme (using unified palette from color_config.R)
+  col_fun <- nes_color_scale(limits = c(-0.6, 0.6), n_colors = 3)
 
   # Create heatmaps side by side (G32A | R403C)
   pdf(file.path(out_dir, "Complex_V_Gene_Expression_Heatmap.pdf"),
