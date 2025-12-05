@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.1] - 2025-12-04
+
+### Summary
+
+Data lineage cleanup and documentation update. Removed unused intermediate files to streamline the data pipeline.
+
+---
+
+### Removed
+
+- **Unused intermediate files from Python_exports/**:
+  - `gsea_significant.csv` (14MB) - superseded by master_gsea_table.csv
+  - `gsea_trajectory.csv` (7MB) - never consumed
+  - `gsea_trajectory_all.csv` (22MB) - never consumed
+  - `contrast_mapping.csv` (490B) - documentation only
+
+- **Unused function from data_loader.py**:
+  - `load_gsea_trajectory_data()` - never called by any script
+
+### Changed
+
+- **1.4.export_gsea_for_python.R**: Now only produces 2 files (was 6):
+  - `gsea_results_long.csv` - consumed by 1.5
+  - `gsea_results_wide.csv` - consumed by data_loader.py
+
+- **Documentation renamed**:
+  - `docs/SCRIPT_DEPENDENCY_ANALYSIS.md` → `docs/DATA_LINEAGE.md`
+
+### Documentation
+
+- Updated `docs/DATA_LINEAGE.md` with clean data flow architecture
+- Updated `03_Results/02_Analysis/Python_exports/README.md`
+- Updated `01_Scripts/Python/README.md`
+- Updated `CLAUDE.md` script numbering (4.x → 1.x references)
+
+---
+
 ## [2.0.0] - 2025-11-25
 
 ### Summary
@@ -32,7 +69,7 @@ Major update for manuscript resubmission with comprehensive visualization suite,
 **Biological Interpretation**: Failed compensation due to unresolved ATP delivery failure at synapses
 
 **Files**:
-- `02_Analysis/viz_ribosome_paradox.R` - Three-pool trajectory visualization
+- `02_Analysis/2.1.viz_ribosome_paradox.R` - Three-pool trajectory visualization
 - `03_Results/02_Analysis/Plots/Ribosome_paradox/` - Core finding plots and data
 
 #### 2. Cross-Database Validation Framework
@@ -63,7 +100,7 @@ Major update for manuscript resubmission with comprehensive visualization suite,
 **Key Finding**: Compensation is dominant pattern (~60% of significant pathways), with G32A showing stronger compensation than R403C
 
 **Files**:
-- `02_Analysis/8.pattern_summary_normalized.py` - Pattern classification and trajectory plots
+- `02_Analysis/3.4.pattern_summary_normalized.py` - Pattern classification and trajectory plots
 - `03_Results/02_Analysis/Plots/Cross_database_validation/` - 10 trajectory plots + pattern summary
 - `03_Results/02_Analysis/Plots/Cross_database_validation/README.md` - Comprehensive documentation
 
@@ -71,21 +108,21 @@ Major update for manuscript resubmission with comprehensive visualization suite,
 
 **New Python Scripts** for manuscript-ready figures:
 
-- `6.publication_figures.py` - Main publication figures (Fig 1-4)
+- `3.1.publication_figures.py` - Main publication figures (Fig 1-4)
   - Fig 1: Ribosome paradox three-pool visualization
   - Fig 2: MitoCarta trajectory patterns
   - Fig 3: Pattern classification summary across databases
   - Fig 4: Semantic pathway overview heatmap
 
-- `6b.publication_figures_dotplot.py` - Alternative dotplot visualizations
+- `3.2.publication_figures_dotplot.py` - Alternative dotplot visualizations
   - Same data, dotplot presentation style
   - Optimized for colorblind-safe palettes
 
-- `7.ribosome_upset_plot.py` - Ribosome gene overlap UpSet plots
+- `3.3.ribosome_upset_plot.py` - Ribosome gene overlap UpSet plots
   - Pre/postsynaptic/mitochondrial ribosome overlap
   - Gene set intersection analysis
 
-- `8.pattern_summary_normalized.py` - Pattern classification suite
+- `3.4.pattern_summary_normalized.py` - Pattern classification suite
   - 10 database-specific trajectory plots
   - Pattern distribution summary
   - Cross-database validation figures
@@ -94,7 +131,7 @@ Major update for manuscript resubmission with comprehensive visualization suite,
 
 #### 4. Critical Period Trajectory Analysis (GSVA-Based)
 
-**New Script**: `viz_critical_period_trajectories_gsva.R`
+**New Script**: `2.4.viz_critical_period_trajectories_gsva.R`
 
 **Enhancements over previous version**:
 - GSVA (Gene Set Variation Analysis) for robust pathway scores
@@ -119,7 +156,7 @@ Major update for manuscript resubmission with comprehensive visualization suite,
 
 #### 5. Mechanistic Cascade Visualization
 
-**New Script**: `viz_mito_translation_cascade.R`
+**New Script**: `2.2.viz_mito_translation_cascade.R`
 
 **Purpose**: Shows complete pathway from mitochondria → translation → synapse → calcium dysregulation
 
@@ -140,7 +177,7 @@ Major update for manuscript resubmission with comprehensive visualization suite,
 
 #### 6. Synaptic Ribosome Compartment Analysis
 
-**New Script**: `viz_synaptic_ribosomes.R`
+**New Script**: `2.3.viz_synaptic_ribosomes.R`
 
 **Purpose**: Pre/postsynaptic ribosome-specific analysis using SynGO database
 
@@ -158,8 +195,8 @@ Major update for manuscript resubmission with comprehensive visualization suite,
 #### 7. Additional Visualization Scripts
 
 - `viz_developmental_framework.R` - Developmental pattern analysis
-- `viz_complex_v_analysis.R` - ATP synthase (Complex V) deep-dive
-- `viz_calcium_genes.R` - Calcium signaling gene analysis (13 validated genes)
+- `2.5.viz_complex_v_analysis.R` - ATP synthase (Complex V) deep-dive
+- `2.6.viz_calcium_genes.R` - Calcium signaling gene analysis (13 validated genes)
 - `viz_pooled_dotplots.R` - Cross-database GSEA dotplots
 
 ---
@@ -175,12 +212,12 @@ Major update for manuscript resubmission with comprehensive visualization suite,
 - Created dedicated ggrepel layer for calcium genes (`max.overlaps = Inf`, bold black, `force = 5`)
 - Corrected calcium gene list to 13 validated symbols (NNAT, CACNG3, CACNA1S, ATP2A1, RYR1, MYLK3, VDR, STIM1, STIM2, ORAI1_1, CALB1, CALR, PNPO)
 - Standardized FDR-mode plots to use `label_method = "top"` to avoid empty plots
-- Created diagnostic script `diagnose_calcium_genes.R` for validation
+- Created diagnostic script `5.3.diagnose_calcium_genes.R` for validation
 
 **Files Modified**:
 - `01_Scripts/RNAseq-toolkit/scripts/DE/plot_standard_volcano.R`
-- `02_Analysis/1a.Main_pipeline.R` (formerly Analysis_pipeline_fin.R)
-- `02_Analysis/viz_calcium_genes.R`
+- `02_Analysis/1.1.main_pipeline.R` (formerly Analysis_pipeline_fin.R)
+- `02_Analysis/2.6.viz_calcium_genes.R`
 
 **Testing**: Integration tests added (`tests/test_subtitle_volcano.R`, `tests/test_integrated_volcano.R`)
 
@@ -240,17 +277,19 @@ Major update for manuscript resubmission with comprehensive visualization suite,
 #### Pipeline Structure Reorganization
 
 **Script Renaming**:
-- `Analysis_pipeline.R` → `1a.Main_pipeline.R` (clearer ordering)
+- `Analysis_pipeline.R` → `1.1.main_pipeline.R` (clearer ordering)
 - Deprecated scripts moved to `02_Analysis/.deprecated/`
 
 **New Pipeline Structure**:
 ```
-1a.Main_pipeline.R                 # Core DE + GSEA (checkpointed)
-1b.generate_contrast_tables.R      # Generate contrast CSVs
-2.add_MitoCarta.R                  # Annotate with MitoCarta pathways
-3.export_gsea_for_python.R         # Export for Python pipeline
-viz_*.R                            # R visualizations (8 scripts)
-6.py, 6b.py, 7.py, 8.py           # Python publication figures
+1.1.main_pipeline.R                 # Core DE + GSEA (checkpointed)
+1.2.generate_contrast_tables.R      # Generate contrast CSVs
+1.3.add_mitocarta.R                  # Annotate with MitoCarta pathways
+1.4.export_gsea_for_python.R         # Export for Python pipeline
+2.x.viz_*.R                          # R visualizations (6 scripts)
+3.x.*.py                             # Python publication figures (4 scripts)
+4.x.*.py/R                           # Master table creation (4 scripts)
+5.x.*.R                              # Sensitivity and verification (5 scripts)
 ```
 
 **Total Runtime**: ~1-2 hours (first run), ~20-30 minutes (subsequent runs with caching)
@@ -281,7 +320,7 @@ viz_*.R                            # R visualizations (8 scripts)
    - Future directions (post-manuscript)
    - Success criteria
 
-4. **`docs/biological_context.md`** - Literature review
+4. **`docs/bio_notes.md`** - Consolidated biological context (replaces `docs/biological_context.md`)
    - Clinical context (DRP1 mutations → epilepsy)
    - Synaptic ribosome biology
    - Mitochondria-translation coupling
@@ -429,7 +468,7 @@ Each major plot folder now contains extensive documentation:
 - Added: ORAI1_1 (correct symbol in dataset)
 - **Final list**: NNAT, CACNG3, CACNA1S, ATP2A1, RYR1, MYLK3, VDR, STIM1, STIM2, ORAI1_1, CALB1, CALR, PNPO
 
-**Validation**: `diagnose_calcium_genes.R` confirms 13/13 genes present in dataset
+**Validation**: `5.3.diagnose_calcium_genes.R` confirms 13/13 genes present in dataset
 
 **Visualization**: Dedicated calcium gene highlighting in volcano plots with dedicated ggrepel layer
 
@@ -485,19 +524,19 @@ Each major plot folder now contains extensive documentation:
 
 ### 🔬 Utility Scripts Added
 
-1. **`verify_enrichments.R`** - Systematic validation and documentation
+1. **`Supp1.verify_enrichments.R`** - Systematic validation and documentation
    - Calcium pathway enrichment verification across all databases
    - Gene list intersection verification (baseline9, mat38)
    - Ribosome pathway statistics for manuscript
    - Calcium gene differential expression summary
    - Markdown summary report with interpretations
 
-2. **`diagnose_calcium_genes.R`** - Calcium gene presence validation
+2. **`Supp2.diagnose_calcium_genes.R`** - Calcium gene presence validation
    - Checks all 13 calcium genes in dataset
    - Reports missing genes, synonyms, alternatives
    - Reproducible diagnostic for future datasets
 
-3. **`extract_syngo_ribosome_genes.R`** - SynGO gene list extraction
+3. **`1.8.extract_syngo_ribosome_genes.R`** - SynGO gene list extraction
    - Extracts pre/postsynaptic ribosome genes from SynGO
    - Gene counts and overlap analysis
    - Used for manual gene set curation
@@ -507,7 +546,7 @@ Each major plot folder now contains extensive documentation:
    - Runs SynGO analysis independently
    - Useful for checkpoint recovery or re-running just SynGO
 
-5. **`analyze_DE_thresholds.R`** - Threshold sensitivity analysis
+5. **`Supp3.analyze_de_thresholds.R`** - Threshold sensitivity analysis
    - Explores effects of different FDR and FC thresholds
    - Helps justify threshold choices for manuscript
 
@@ -515,7 +554,7 @@ Each major plot folder now contains extensive documentation:
 
 ### 🗂️ Data Export for Python Pipeline
 
-**New Script**: `3.export_gsea_for_python.R`
+**New Script**: `1.4.export_gsea_for_python.R`
 
 **Purpose**: Export R GSEA results to CSV format for Python visualization pipeline
 
@@ -586,9 +625,9 @@ Each major plot folder now contains extensive documentation:
 #### Diagnostic Scripts
 
 **Validation Tools**:
-- `diagnose_calcium_genes.R` - Gene presence validation
-- `verify_enrichments.R` - GSEA enrichment verification
-- `analyze_DE_thresholds.R` - Threshold sensitivity
+- `Supp2.diagnose_calcium_genes.R` - Gene presence validation
+- `Supp1.verify_enrichments.R` - GSEA enrichment verification
+- `Supp3.analyze_de_thresholds.R` - Threshold sensitivity
 
 **Output**: Console reports and CSV summaries for manuscript
 
@@ -636,7 +675,7 @@ Each major plot folder now contains extensive documentation:
 ### 🔄 Breaking Changes
 
 1. **Script Naming**:
-   - `Analysis_pipeline.R` → `1a.Main_pipeline.R`
+   - `Analysis_pipeline.R` → `1.1.main_pipeline.R`
    - Old scripts moved to `.deprecated/`
    - Update any external scripts referencing old names
 
@@ -673,22 +712,22 @@ Each major plot folder now contains extensive documentation:
 
 3. **Run updated pipeline**:
    ```bash
-   Rscript 02_Analysis/1a.Main_pipeline.R
-   Rscript 02_Analysis/1b.generate_contrast_tables.R
-   Rscript 02_Analysis/2.add_MitoCarta.R
-   Rscript 02_Analysis/3.export_gsea_for_python.R
+   Rscript 02_Analysis/1.1.main_pipeline.R
+   Rscript 02_Analysis/1.2.generate_contrast_tables.R
+   Rscript 02_Analysis/1.3.add_mitocarta.R
+   Rscript 02_Analysis/1.4.export_gsea_for_python.R
    ```
 
 4. **Generate new visualizations**:
    ```bash
    # R visualizations
-   Rscript 02_Analysis/viz_ribosome_paradox.R
-   Rscript 02_Analysis/viz_critical_period_trajectories_gsva.R
+   Rscript 02_Analysis/2.1.viz_ribosome_paradox.R
+   Rscript 02_Analysis/2.4.viz_critical_period_trajectories_gsva.R
    # ... (run others as needed)
 
    # Python visualizations
-   python3 02_Analysis/6.publication_figures.py
-   python3 02_Analysis/8.pattern_summary_normalized.py
+   python3 02_Analysis/3.1.publication_figures.py
+   python3 02_Analysis/3.4.pattern_summary_normalized.py
    ```
 
 **Total runtime**: ~1-2 hours (first run with cache generation)
@@ -700,9 +739,9 @@ Each major plot folder now contains extensive documentation:
 #### New Documentation
 
 - `02_Analysis/SCRIPTS.md` - Complete script inventory
-- `docs/SESSION_HISTORY.md` - Development session log
-- `docs/NEXT_STEPS.md` - Priorities and future directions
-- `docs/biological_context.md` - Literature review and mechanistic model
+- `docs/PATTERN_CLASSIFICATION.md` - Pattern classification system documentation
+- `docs/bio_notes.md` - Curated biological notes (consolidated from prior literature files)
+- `docs/biological_context.md` - Additional biological context (now consolidated into `docs/bio_notes.md`)
 - 7 comprehensive plot folder READMEs
 - `03_Results/02_Analysis/Plots/README.md` - Visualization overview
 
@@ -734,7 +773,7 @@ Each major plot folder now contains extensive documentation:
 
 ---
 
-### 🔮 Future Directions (See docs/NEXT_STEPS.md)
+### 🔮 Future Directions
 
 **Medium-Term Goals** (1-2 weeks):
 - Protein-level validation (if proteomics available)
@@ -871,6 +910,6 @@ For each reviewer comment being addressed:
 
 ---
 
-**For detailed development history, see**: `docs/SESSION_HISTORY.md`
-**For future priorities, see**: `docs/NEXT_STEPS.md`
-**For scientific context, see**: `docs/biological_context.md`
+**For pattern classification details, see**: `docs/PATTERN_CLASSIFICATION.md`
+**For comprehensive literature notes, see**: `docs/bio_notes.md`
+**For additional biological context, see**: `docs/bio_notes.md`

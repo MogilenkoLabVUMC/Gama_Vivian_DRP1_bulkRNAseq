@@ -1,228 +1,125 @@
-# Normalized Pattern Summary Visualizations
+# Pattern_Summary_Normalized
 
-## Problem Statement
+## Overview
 
-**Original pattern summary figures are biased by database size:**
+Normalized pattern distribution visualizations showing trajectory pattern classifications for **ALL 12,221 pathways** tested in GSEA analysis.
 
-| Database | Pathway Count | Visual Impact | Pattern Visibility |
-|----------|--------------|---------------|-------------------|
-| gobp     | ~5000        | Dominates     | Patterns visible  |
-| hallmark | ~10          | Barely visible| Patterns obscured |
-| MitoCarta| ~50          | Small         | Hard to compare   |
+**CRITICAL CLARIFICATION:** These figures show pattern proportions for **ALL tested pathways**, not just those with p.adjust < 0.05. Every pathway tested in GSEA receives a pattern classification based on its trajectory dynamics across Early, TrajDev, and Late stages.
 
-**Result:** Cannot compare pattern distributions across databases of different sizes.
+## Pathway Inclusion Criteria
 
-**Example:**
-- "Does hallmark show more compensation *relatively*?" → **Can't tell**
-- "Which database has highest % progressive?" → **Can't compare**
+### What Is Included
 
-## Solution: Normalized Visualizations
+- **ALL 12,221 unique pathways** from the master GSEA table
+- Pathways are included regardless of statistical significance
+- Pattern classification is applied to every pathway based on trajectory metrics (NES values and p-values)
 
-### Three Alternative Approaches
+### Database Breakdown
 
-#### 1. **Normalized 100% Stacked Bars** ⭐ RECOMMENDED
+| Database | Pathways | Description |
+|----------|----------|-------------|
+| gobp | 4,785 | Gene Ontology Biological Process |
+| cgp | 2,985 | Chemical and Genetic Perturbations |
+| reactome | 1,295 | Reactome pathways |
+| gomf | 1,025 | Gene Ontology Molecular Function |
+| wiki | 706 | WikiPathways |
+| gocc | 627 | Gene Ontology Cellular Component |
+| kegg | 355 | KEGG pathways |
+| tf | 272 | Transcription Factor targets |
+| MitoCarta | 72 | Mitochondrial pathways |
+| hallmark | 50 | MSigDB Hallmark collection |
+| SynGO | 32 | Synaptic Gene Ontology |
+| canon | 17 | Canonical pathways |
 
-**File:** `pattern_summary_normalized.pdf`
+### Pattern Distribution Reality
 
-**Features:**
-- Each database bar = 100% (regardless of absolute size)
-- Pattern proportions directly comparable
-- Absolute counts shown as annotations: "N (X%)"
-- Total pathways shown at bar end: "n=5000"
+Most pathways (~78%) are classified as "Complex" because they do not meet the criteria for defined trajectory patterns:
 
-**Use case:** Primary figure for pattern comparison
+| Pattern | G32A | R403C | Description |
+|---------|------|-------|-------------|
+| Complex | 9,566 (78%) | 8,851 (72%) | Does not fit defined trajectory criteria |
+| Compensation | 1,462 (12%) | 1,612 (13%) | Active adaptation |
+| Natural_improvement | 851 (7%) | 1,283 (10%) | Passive recovery |
+| Sign_reversal | 244 (2%) | 386 (3%) | Trajectory reversal |
+| Late_onset | 94 (<1%) | 73 (<1%) | Maturation-dependent |
+| Transient | 2 (<1%) | 12 (<1%) | Temporary defect |
+| Natural_worsening | 2 (<1%) | 4 (<1%) | Passive deterioration |
 
-**Example interpretation:**
-```
-hallmark  ████████████████████70%████████20%███10%  n=10
-          [Comp: 7 (70%)] [Prog: 2 (20%)] [Other: 1 (10%)]
+## What the Figures Show
 
-gobp      ████████45%█████████████30%█████████25%  n=5000
-          [Comp: 2250 (45%)] [Prog: 1500 (30%)] [Other: 1250 (25%)]
-```
+### Visualization Choice: "Complex" Excluded
 
-**Insight:** Hallmark has higher compensation proportion (70% vs 45%) despite fewer pathways.
+The figures **exclude the "Complex" category** from visualization to focus on pathways with interpretable trajectory patterns. This means:
 
----
+- **Bars represent only ~22% of pathways for G32A** (2,655 of 12,221)
+- **Bars represent only ~28% of pathways for R403C** (3,370 of 12,221)
+- The "n=X" annotation at right shows total pathways per database **after excluding Complex**
 
-#### 2. **Dual-Panel Comparison**
+### How to Interpret
 
-**Files:** `pattern_comparison_dual_G32A.pdf`, `pattern_comparison_dual_R403C.pdf`
+1. **Proportions are within "meaningful patterns" only** - not the full database
+2. **Each bar normalized to 100%** - enables comparison across databases of different sizes
+3. **Absolute counts shown as "N (%)"** inside bars for reference
+4. **"n=X" totals** at right = pathways in that database with non-Complex patterns
 
-**Features:**
-- **Panel A:** Normalized (100% stacked) - for proportion comparison
-- **Panel B:** Absolute counts - for context/reference
+### Example Interpretation
 
-**Use case:** When both perspectives needed in single figure
+If hallmark shows 50% Compensation with n=25:
+- 25 hallmark pathways have non-Complex patterns
+- 12-13 of those 25 show Compensation
+- The remaining 25 hallmark pathways (50 - 25 = 25) are classified as Complex
 
----
+## Generating Script
 
-#### 3. **Percentage Heatmap**
+**`02_Analysis/3.4.pattern_summary_normalized.py`**
 
-**File:** `pattern_summary_heatmap.pdf`
+## Contents
 
-**Features:**
-- Compact matrix view (Database × Pattern)
-- Color intensity = percentage
-- Text annotations show both "X% (n=Y)"
+| File | Description |
+|------|-------------|
+| `pattern_summary_normalized.pdf/png` | Main figure: 100% stacked bars for both mutations (G32A and R403C) |
+| `pattern_comparison_dual_G32A.pdf/png` | Dual-panel: normalized (left) vs absolute counts (right) for G32A |
+| `pattern_comparison_dual_R403C.pdf/png` | Dual-panel: normalized (left) vs absolute counts (right) for R403C |
 
-**Use case:** Quick overview of all pattern distributions
+## Data Source
 
----
+- **Input:** `03_Results/02_Analysis/master_gsea_table.csv`
+- **Classification:** Pattern assignments from `01_Scripts/Python/pattern_definitions.py`
+- **Filtering:** Complex pattern excluded; all other patterns (Compensation, Sign_reversal, Progressive, Natural_worsening, Natural_improvement, Late_onset, Transient) shown
 
-## Comparison: Original vs Normalized
+## Pattern Classification Logic
 
-### Original Figures
+Patterns are classified based on:
+1. **Early effect:** NES and p.adjust for D35 mutation vs control
+2. **TrajDev effect:** NES and p.adjust for mutation-specific maturation deviation
+3. **Late effect:** NES and p.adjust for D65 mutation vs control
 
-**Location:** `03_Results/02_Analysis/Plots/Cross_database_validation/pattern_summary.pdf`
-**Script:** `02_Analysis/4.visualize_trajectory_patterns.py`
+Key thresholds (from `pattern_definitions.py`):
+- p.adjust < 0.05 = significant
+- |NES| > 0.5 = meaningful effect
+- |Late|/|Early| < 0.7 = improvement
+- |Late|/|Early| > 1.3 = worsening
 
-**Strengths:**
-- Shows absolute pathway counts
-- Good for understanding database sizes
-- Simple side-by-side comparison
+See `docs/PATTERN_CLASSIFICATION.md` for full specification.
 
-**Limitations:**
-- Large databases dominate visually
-- Cannot compare pattern proportions across databases
-- Small databases hard to interpret
-
-### Normalized Figures
-
-**Location:** `03_Results/02_Analysis/Plots/Pattern_Summary_Normalized/*.pdf`
-**Script:** `02_Analysis/8.pattern_summary_normalized.py`
-
-**Strengths:**
-- Equal visual weight for all databases
-- Direct proportion comparison
-- Absolute counts preserved as annotations
-- Answers "which database has highest % compensation?"
-
-**Limitations:**
-- Database size information less prominent
-- Requires reading annotations for absolute context
-
----
-
-## Usage Recommendations
-
-### For Publications/Presentations
-
-**Use normalized version when:**
-- Comparing pattern distributions across databases
-- Highlighting relative differences in compensation/progression
-- Database sizes are very different (e.g., 10 vs 5000)
-
-**Use original version when:**
-- Showing absolute numbers of pathways
-- Emphasizing the scale of affected pathways
-- Context of database sizes is important
-
-**Best practice:** Show both!
-- Main figure: Normalized (for comparison)
-- Supplementary: Original (for absolute context)
-
-### For Analysis
-
-1. **Start with normalized** to identify interesting proportions
-2. **Check original** to verify absolute significance
-3. **Cross-reference** to avoid over-interpreting small databases
-
----
-
-## Technical Implementation
-
-### Normalization Formula
-
-```python
-# For each database independently:
-totals = pathway_counts_per_database.sum()
-proportions = (pathway_counts / totals) * 100  # Convert to percentage
-```
-
-### Annotation Format
-
-```python
-# Inside bars (if space > 5%):
-label = f'{absolute_count}\n({percentage:.0f}%)'
-
-# At bar end:
-label = f'n={total_pathways}'
-```
-
-### Pattern Order
-
-Both original and normalized use same pattern order:
-1. Compensation
-2. Progressive
-3. Natural_worsening
-4. Natural_improvement
-5. Late_onset
-6. Transient
-
----
-
-## Generated Files
-
-```
-Pattern_Summary_Normalized/
-├── pattern_summary_normalized.pdf           # Main figure (100% stacked)
-├── pattern_summary_normalized.png
-├── pattern_comparison_dual_G32A.pdf         # Dual-panel for G32A
-├── pattern_comparison_dual_G32A.png
-├── pattern_comparison_dual_R403C.pdf        # Dual-panel for R403C
-├── pattern_comparison_dual_R403C.png
-├── pattern_summary_heatmap.pdf              # Heatmap alternative
-├── pattern_summary_heatmap.png
-└── README.md                                # This file
-```
-
----
-
-## Regenerating Figures
+## Regeneration
 
 ```bash
-# Generate all normalized figures
-python3 02_Analysis/8.pattern_summary_normalized.py
-
-# Output: Pattern_Summary_Normalized/*.pdf
+python3 02_Analysis/3.4.pattern_summary_normalized.py
 ```
 
-**Note:** Original figures unchanged - this script creates new alternatives.
+**Runtime:** < 1 minute
 
----
+## Usage Guidance
 
-## Key Insights Revealed by Normalization
+**Appropriate uses:**
+- Comparing pattern proportions across databases
+- Showing relative prevalence of trajectory response types
+- Supporting claims about mutation-specific response profiles
 
-*(To be filled after analyzing the normalized figures)*
+**Inappropriate uses:**
+- Claiming "X% of pathways show compensation" (must specify "of non-Complex pathways")
+- Direct comparison of bar heights between databases (use dual-panel figures instead)
 
-### Compensation Patterns
-
-- **Database X** shows highest compensation proportion: ___%
-- **Database Y** shows lowest: ___%
-- Difference more apparent in normalized view
-
-### Progressive/Worsening Patterns
-
-- **Database A** has __% progressive (highest)
-- **Database B** has __% progressive (lowest)
-
-### Cross-Database Comparison
-
-- Enables ranking databases by pattern prevalence
-- Identifies databases with unusual distributions
-- Reveals patterns masked by absolute counts
-
----
-
-## Related Documentation
-
-- Original pattern summary: `../Cross_database_validation/README.md`
-- Pattern classification logic: `01_Scripts/Python/patterns.py`
-- Trajectory framework: `02_Analysis/README_trajectory_analysis.md`
-
----
-
-**Generated:** 2025-11-25
-**Script:** `02_Analysis/8.pattern_summary_normalized.py`
-**Purpose:** Address database size bias in pattern visualization
+**Recommended caption template:**
+> "Pattern distribution for pathways with classifiable trajectory dynamics (excluding Complex patterns; see Methods). Proportions normalized per database. N=pathways per database with defined patterns."

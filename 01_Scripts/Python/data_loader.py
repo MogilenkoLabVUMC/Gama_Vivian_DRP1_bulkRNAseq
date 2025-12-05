@@ -17,6 +17,7 @@ def load_classified_pathways(exclude_databases=None, min_data_points=None):
     Load classified pathway data with database filtering.
 
     Automatically excludes CGP and canon databases by default.
+    Uses authoritative master_gsea_table.csv with significance-based pattern classifications.
 
     Parameters
     ----------
@@ -29,16 +30,63 @@ def load_classified_pathways(exclude_databases=None, min_data_points=None):
     Returns
     -------
     pd.DataFrame
-        Filtered pathway data
+        Filtered pathway data with pattern classifications
     """
-    data_path = resolve_path(CONFIG['classified_data'])
+    # Load from authoritative master table
+    data_path = resolve_path(CONFIG['master_gsea_table'])
 
     if not data_path.exists():
-        raise FileNotFoundError(f"Classified data not found: {data_path}")
+        raise FileNotFoundError(f"Master GSEA table not found: {data_path}")
 
-    print(f"Loading classified pathways from: {data_path}")
+    print(f"Loading classified pathways from: master_gsea_table.csv")
     df = pd.read_csv(data_path)
-    print(f"  Loaded {len(df)} pathways across {df['database'].nunique()} databases")
+
+    # Pivot to wide format (one row per pathway) to match expected structure
+    # Group by pathway_id, database, Description and keep pattern columns
+    id_cols = ['pathway_id', 'database', 'Description']
+    pattern_cols = ['Pattern_G32A', 'Confidence_G32A', 'Super_Category_G32A',
+                    'Pattern_R403C', 'Confidence_R403C', 'Super_Category_R403C']
+    nes_cols = ['NES_Early_G32A', 'NES_Early_R403C', 'NES_TrajDev_G32A',
+                'NES_TrajDev_R403C', 'NES_Late_G32A', 'NES_Late_R403C']
+
+    # Take first occurrence of each pathway (patterns are consistent across contrasts)
+    keep_cols = id_cols + pattern_cols + nes_cols
+    available_cols = [c for c in keep_cols if c in df.columns]
+
+    df = df[available_cols].drop_duplicates(subset=['pathway_id', 'database']).copy()
+
+    # Merge p.adjust columns from wide format file (needed for some visualizations)
+    wide_file = resolve_path('03_Results/02_Analysis/Python_exports/gsea_results_wide.csv')
+    if wide_file.exists():
+        df_wide = pd.read_csv(wide_file)
+
+        # Get all p.adjust columns and rename them to trajectory format
+        contrast_to_traj = {
+            'p.adjust_G32A_vs_Ctrl_D35': 'p.adjust_Early_G32A',
+            'p.adjust_Maturation_G32A_specific': 'p.adjust_TrajDev_G32A',
+            'p.adjust_G32A_vs_Ctrl_D65': 'p.adjust_Late_G32A',
+            'p.adjust_R403C_vs_Ctrl_D35': 'p.adjust_Early_R403C',
+            'p.adjust_Maturation_R403C_specific': 'p.adjust_TrajDev_R403C',
+            'p.adjust_R403C_vs_Ctrl_D65': 'p.adjust_Late_R403C',
+        }
+
+        # Rename columns in wide file
+        df_wide = df_wide.rename(columns=contrast_to_traj)
+
+        # Get renamed p.adjust columns that exist
+        padj_cols_to_merge = [v for k, v in contrast_to_traj.items() if v in df_wide.columns]
+        merge_cols = ['pathway_id', 'database'] + padj_cols_to_merge
+        available_merge_cols = [c for c in merge_cols if c in df_wide.columns]
+
+        if len(available_merge_cols) > 2:  # More than just ID cols
+            df = df.merge(
+                df_wide[available_merge_cols].drop_duplicates(),
+                on=['pathway_id', 'database'],
+                how='left'
+            )
+            print(f"  Merged p.adjust columns: {len(padj_cols_to_merge)} columns")
+
+    print(f"  Loaded {len(df)} unique pathways across {df['database'].nunique()} databases")
 
     # Apply database exclusions
     if exclude_databases is None:
@@ -100,106 +148,6 @@ def filter_pathways(df, min_data_points=3):
         print(f"  Filtered {n_filtered} pathways with <{min_data_points} data points")
 
     return df_filtered
-
-
-def load_gsea_trajectory_data(contrast_file=None, include_nonsignificant=False):
-    """
-    Load GSEA trajectory data in long format.
-
-    Parameters
-    ----------
-    contrast_file : str or Path, optional
-        Path to GSEA trajectory CSV. Default: CONFIG['data_dir'] / 'gsea_trajectory.csv'
-        (or 'gsea_trajectory_all.csv' if include_nonsignificant=True)
-    include_nonsignificant : bool, optional
-        If True, load ALL tested pathways including those never significant.
-        If False (default), load only pathways significant in at least one contrast.
-        This allows distinguishing "tested but not significant" from "not tested".
-
-    Returns
-    -------
-    tuple
-        (df_long, contrast_mapping)
-        df_long: Long-format DataFrame with pathway GSEA results
-        contrast_mapping: Dict mapping original contrasts to trajectory names
-
-    Notes
-    -----
-    When include_nonsignificant=True, the returned DataFrame includes columns:
-    - ever_significant: True if pathway is significant (padj < 0.05) in any contrast
-    - ever_significant_trajectory: True if significant in any trajectory contrast
-    """
-    if contrast_file is None:
-        data_dir = resolve_path(CONFIG['data_dir'])
-        if include_nonsignificant:
-            contrast_file = data_dir / 'gsea_trajectory_all.csv'
-        else:
-            contrast_file = data_dir / 'gsea_trajectory.csv'
-    else:
-        contrast_file = Path(contrast_file)
-
-    if not contrast_file.exists():
-        raise FileNotFoundError(f"GSEA trajectory data not found: {contrast_file}")
-
-    file_type = "all pathways (incl. non-significant)" if include_nonsignificant else "significant pathways only"
-    print(f"Loading GSEA trajectory data ({file_type})")
-    print(f"  Source: {contrast_file}")
-    df = pd.read_csv(contrast_file)
-
-    # Apply contrast name mapping
-    contrast_mapping = CONFIG['contrast_mapping']
-    df['trajectory_stage'] = df['contrast'].map(contrast_mapping)
-
-    # Filter out unmapped contrasts
-    df = df[df['trajectory_stage'].notna()].copy()
-
-    print(f"  Loaded {len(df)} GSEA results for {df['trajectory_stage'].nunique()} stages")
-
-    # Report significance breakdown if available
-    if 'ever_significant_trajectory' in df.columns:
-        n_sig = df['ever_significant_trajectory'].sum()
-        n_total = len(df)
-        print(f"  Significance: {n_sig}/{n_total} records from pathways with ≥1 significant result")
-
-    return df, contrast_mapping
-
-
-def pivot_to_wide(df_long, id_cols=None):
-    """
-    Pivot long-format GSEA data to wide format.
-
-    Parameters
-    ----------
-    df_long : pd.DataFrame
-        Long-format DataFrame from load_gsea_trajectory_data
-    id_cols : list, optional
-        Columns to use as index. Default: ['pathway_id', 'database', 'Description']
-
-    Returns
-    -------
-    pd.DataFrame
-        Wide-format DataFrame with NES_* and p.adjust_* columns
-    """
-    if id_cols is None:
-        id_cols = ['pathway_id', 'database', 'Description']
-
-    # Ensure required columns exist
-    available_id_cols = [c for c in id_cols if c in df_long.columns]
-
-    df_pivot = df_long.pivot_table(
-        index=available_id_cols,
-        columns='trajectory_stage',
-        values=['NES', 'p.adjust'],
-        aggfunc='first'
-    ).reset_index()
-
-    # Flatten column names
-    df_pivot.columns = [
-        '_'.join(col).strip('_') if col[1] else col[0]
-        for col in df_pivot.columns.values
-    ]
-
-    return df_pivot
 
 
 def get_database_summary(df):

@@ -41,7 +41,7 @@ This document describes the migration of the GVDRP1 bulk RNA-seq analysis reposi
 
 **Path Standardization:**
 - Replaced hardcoded `/workspaces/GVDRP1/` paths with relative paths using `here::here()`
-- Affected file: `02_Analysis/Analysis_pipeline_fin.R` → `1a.Main_pipeline.R`(+ 7 path corrections)
+- Affected file: `02_Analysis/Analysis_pipeline_fin.R` → `1.1.main_pipeline.R`(+ 7 path corrections)
 - All analysis scripts now use workspace-relative paths
 
 **Git Submodule Update:**

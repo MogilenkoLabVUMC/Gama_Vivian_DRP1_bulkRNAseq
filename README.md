@@ -5,7 +5,7 @@
 
 # Intro
 
-Transcriptional analysis of DRP1 mutations (G32A, R403C) in iPSC-derived cortical neurons across neuronal maturation (Day 35 → Day 65). This repository contains a complete downstream analysis pipeline starting from count matrices, revealing a translation paradox where ribosome biogenesis increases while synaptic translation fails.
+Transcriptional analysis of DRP1 mutations (G32A, R403C) in iPSC-derived cortical neurons across neuronal maturation (Day 35 → Day 65). This repository contains a complete downstream analysis pipeline starting from count matrices to hopefully insightfull visualisations.
 
 ## 📂 Repository Structure
 
@@ -13,12 +13,13 @@ Transcriptional analysis of DRP1 mutations (G32A, R403C) in iPSC-derived cortica
 ├── 00_Data/                       # Reference databases (SynGO, MitoCarta)
 ├── 01_Scripts/
 │   ├── RNAseq-toolkit/           # Git submodule with GSEA & DE helper functions
-│   └── R_scripts/                # Project-specific helpers (SynGO, MitoCarta integration)
+│   ├── R_scripts/                # Project-specific helpers (SynGO, MitoCarta integration)
+│   └── Python/                   # Python modules (pattern_definitions, viz_bump_charts)
 ├── 02_Analysis/                   # Analysis pipeline scripts (see SCRIPTS.md)
-│   ├── 1a.Main_pipeline.R        # Core DE analysis + GSEA with checkpointing
-│   ├── 1b-3.*.R                  # Contrast tables, MitoCarta, Python exports
-│   ├── viz_*.R                   # R visualization scripts (8 scripts)
-│   ├── *.py                      # Python visualization scripts (4 scripts)
+│   ├── 1.1-1.7.*.R/py            # Main pipeline: DE, GSEA, GSVA, master tables
+│   ├── 2.1-2.6.viz_*.R           # R visualization scripts (6 scripts)
+│   ├── 3.1-3.9.*.py/R            # Python/R visualizations including bump charts
+│   ├── Supp*.R/py                # Supplementary/utility scripts
 │   ├── SCRIPTS.md                # Complete script inventory and dependencies
 │   └── .deprecated/              # Archived old scripts
 ├── 03_Results/
@@ -27,17 +28,19 @@ Transcriptional analysis of DRP1 mutations (G32A, R403C) in iPSC-derived cortica
 │       ├── checkpoints/          # Cached computation results (.rds files)
 │       ├── DE_results/           # Differential expression tables (9 contrasts)
 │       ├── Python_exports/       # GSEA data exported for Python (CSV files)
+│       ├── master_gsea_table.csv # Comprehensive GSEA results (109K rows)
+│       ├── master_gsva_*.csv     # GSVA enrichment scores (focused + all pathways)
 │       └── Plots/                # All visualizations (see folder READMEs)
-│           ├── Cross_database_validation/  # Pattern validation across 10 databases
+│           ├── Trajectory_Flow/           # Bump charts & alluvial diagrams
+│           ├── Cross_database_validation/ # Pattern validation across 10 databases
 │           ├── Ribosome_paradox/          # Translation crisis core finding
-│           ├── Publication_Figures/        # Manuscript-ready figures
-│           ├── Mito_translation_cascade/   # Energy→translation→synapse cascade
-│           └── Synaptic_ribosomes/         # Pre/postsynaptic translation analysis
+│           ├── Publication_Figures/       # Manuscript-ready figures
+│           └── ...                        # Additional visualization folders
 ├── docs/                          # Extended documentation
-│   ├── SESSION_HISTORY.md        # Session-by-session development log
-│   ├── NEXT_STEPS.md             # Current priorities and future directions
-│   ├── MIGRATION.md              # Container setup and migration notes
-│   └── biological_context.md     # Literature review and mechanistic model
+│   ├── bio_notes.md              # Curated biological notes and mechanistic model
+│   ├── PATTERN_CLASSIFICATION.md # Pattern classification system documentation
+│   ├── CHANGELOG.md              # Analysis evolution and version history
+│   └── MIGRATION.md              # Container setup and migration notes
 └── .deprecated/                   # Archived materials (old docs, backups)
 ```
 
@@ -48,32 +51,38 @@ Transcriptional analysis of DRP1 mutations (G32A, R403C) in iPSC-derived cortica
 **Prerequisites**: to run the analysis in the same computational enviroment it was tested in you will need to build and install the [scbio-dock v0.5.1](https://github.com/tony-zhelonkin/scbio-docker/tree/v0.5.1)
 
 ```bash
-# 1. Main differential expression and GSEA (uses checkpointing)
-Rscript 02_Analysis/1a.Main_pipeline.R          # ~30-60 min first run, 5-10 min cached
+# Phase 1: Core analysis pipeline (run in order)
+Rscript 02_Analysis/1.1.main_pipeline.R          
+Rscript 02_Analysis/1.2.generate_contrast_tables.R
+Rscript 02_Analysis/1.3.add_mitocarta.R
+Rscript 02_Analysis/1.4.export_gsea_for_python.R
 
-# 2. Generate contrast tables and annotations
-Rscript 02_Analysis/1b.generate_contrast_tables.R
-Rscript 02_Analysis/2.add_MitoCarta.R
-Rscript 02_Analysis/3.export_gsea_for_python.R
+# Phase 2: Master tables (injested downstream)
+python3 02_Analysis/1.5.create_master_pathway_table.py   # Master GSEA table
+Rscript 02_Analysis/1.6.gsva_analysis.R                  # GSVA all pathways
+Rscript 02_Analysis/1.7.create_master_gsva_table.R       # GSVA master tables
 
-# 3. Generate R visualizations (run any/all, independent)
-Rscript 02_Analysis/viz_ribosome_paradox.R
-Rscript 02_Analysis/viz_mito_translation_cascade.R
-Rscript 02_Analysis/viz_synaptic_ribosomes.R
+# Phase 3: R visualizations (run any/all, independent)
+Rscript 02_Analysis/2.1.viz_ribosome_paradox.R
+Rscript 02_Analysis/2.4.viz_critical_period_trajectories_gsva.R
 # ... (see 02_Analysis/SCRIPTS.md for complete list)
 
-# 4. Generate Python publication figures
-python3 02_Analysis/6.publication_figures.py
-python3 02_Analysis/8.pattern_summary_normalized.py
+# Phase 4: Python visualizations (after R exports)
+python3 02_Analysis/3.1.publication_figures.py
+python3 02_Analysis/3.4.pattern_summary_normalized.py
+
+# Phase 5: Trajectory visualizations
+python3 02_Analysis/3.7.viz_bump_chart.py                # Static bump charts
+python3 02_Analysis/3.8.viz_interactive_bump_dashboard.py # Interactive explorer
 ```
 
-**Total runtime**: ~1-2 hours (first run), ~20-30 minutes (subsequent runs with caching)
 
 ### Script Organization
 
-- **Main pipeline** (1a-3.R): Core analysis, run in order
-- **Visualization scripts** (viz_*.R): Independent R plots, run in any order
-- **Python scripts** (6-8.py): Publication figures, run after R exports
+- **Main pipeline** (1.1-1.7): Core analysis, master tables - run in order
+- **R visualizations** (2.1-2.6): Independent plots - run after Phase 1
+- **Python visualizations** (3.1-3.9): Publication figures, bump charts - run after exports
+- **Utilities** (Supp*.R/py): Verification, sensitivity analysis, explorers
 - **See**: `02_Analysis/SCRIPTS.md` for complete inventory and dependencies
 
 ## 🧬 Experimental Design
@@ -96,7 +105,7 @@ python3 02_Analysis/8.pattern_summary_normalized.py
 
 ### Discoveries
 
-DRP1 mutations seem to trigger a **translation crisis** where neurons attempt a compensation by increasing ribosome production, but fail to maintain functional synaptic translation:
+DRP1 mutations seem to trigger a **translation crisis** where neurons attempt a compensation by increasing ribosome production, increasing mitochondrial function, but fail to maintain functional synaptic translation, probably because of diminished mitochondrial network at the synapse?:
 
 | Pool | Early (D35) | Maturation (TrajDev) | Late (D65) | Pattern |
 |------|-------------|----------------------|------------|---------|
@@ -104,7 +113,7 @@ DRP1 mutations seem to trigger a **translation crisis** where neurons attempt a 
 | **Synaptic ribosomes (pre/post)** | ↑ (NES +2.3-2.5) | **↓ (NES -2.9 to -3.0)** | ↓ (NES -2.5) | Collapse |
 | **Mitochondrial ribosomes** | ↓ (NES -2.2) | **↑ (NES +1.9)** | Normal | Compensation |
 
-**Statistical support**: FDR < 1e-11 for key effects, validated across 10 independent pathway databases
+**Statistical support**: FDR < 0.05 for key effects, validated across 10 independent pathway databases
 
 ### Potential Mechanistic Model
 
@@ -114,10 +123,12 @@ DRP1 Mutation → Mitochondrial Positioning Failure
 Synaptic ATP Depletion
     ↓
 ┌─────────────────────────────────┬──────────────────────────────────┐
-│ COMPENSATION (Pools 1 & 3)     │ FAILURE (Pool 2)                 │
+│ COMPENSATION (Pools 1 & 3)      │ FAILURE (Pool 2)                 │
 ├─────────────────────────────────┼──────────────────────────────────┤
-│ ↑ Ribosome biogenesis          │ ↓ Synaptic translation           │
-│ ↑ Mitochondrial ribosomes      │ ↓ Pre/postsynaptic programs      │
+│ ↑ Ribosome biogenesis           │                                  │
+│ ↑ Mitochondrial translation     |                                  │
+│ ↑ Mitochondrial function        │ ↓ Synaptic translation           │
+│ ↑ Mitochondrial ribosomes       │ ↓ Pre/postsynaptic programs      │
 │ (Adaptive response)             │ (Energy bottleneck)              │
 └─────────────────────────────────┴──────────────────────────────────┘
     ↓
@@ -136,39 +147,80 @@ Findings replicated across 10 independent databases:
 
 **Pattern distribution**: Compensation is the dominant response (~60% of significant pathways), with G32A showing stronger compensation than R403C.
 
-## 📖 Documentation
+## 🔄 Pattern Classification System
+
+Pathway trajectories are classified into 8 mutually exclusive patterns based on three stages:
+- **Early**: Mutation effect at D35 (immature neurons)
+- **TrajDev**: Mutation-specific deviation from normal maturation
+- **Late**: Mutation effect at D65 (mature neurons)
+
+### Pattern Types
+
+| Pattern | Active? | Description |
+|---------|---------|-------------|
+| **Compensation** | Active | Early defect + TrajDev opposes + Late improved |
+| **Sign_reversal** | Active | Early defect + TrajDev opposes + sign flipped |
+| **Progressive** | Active | Early defect + TrajDev amplifies + Late worsened |
+| **Natural_improvement** | Passive | Early defect + no TrajDev + Late improved |
+| **Natural_worsening** | Passive | Early defect + no TrajDev + Late worsened |
+| **Late_onset** | - | No Early defect + Late defect emerges |
+| **Transient** | - | Strong Early defect + Late resolved |
+| **Complex** | - | Inconsistent or multiphasic |
+
+**Active vs Passive**: Active patterns require significant TrajDev (p < 0.05, |NES| > 0.5), indicating transcriptional plasticity beyond normal development.
+
+**Canonical source**: `01_Scripts/Python/pattern_definitions.py`
+**Full documentation**: `docs/PATTERN_CLASSIFICATION.md`
+
+## 📈 Trajectory Visualizations
+
+### Bump Charts
+
+Bump charts show pathway NES trajectories from Early to Late, with curvature representing TrajDev magnitude:
+
+| Visualization | Script | Description |
+|--------------|--------|-------------|
+| **Static bump charts** | `3.7.viz_bump_chart.py` | PDF/PNG with weighted lines, curves, labels |
+| **Interactive dashboard** | `3.8.viz_interactive_bump_dashboard.py` | HTML explorer with filtering, tooltips |
+
+**How to read curves**:
+- **Upward bulge**: Positive TrajDev (pathway upregulated during maturation)
+- **Downward bulge**: Negative TrajDev (pathway downregulated during maturation)
+- **Straight line**: No significant TrajDev
+
+**Key outputs** (in `03_Results/02_Analysis/Plots/Trajectory_Flow/`):
+- `bump_focused_FINAL_paper_combined.pdf` - Publication-ready figure
+- `interactive_bump_dashboard.html` - Interactive explorer
+
+**See**: `03_Results/02_Analysis/Plots/Trajectory_Flow/README.md` for visualization details.
+
+## 📖 Key References
 
 ### Core Documentation
 
 | File | Purpose |
 |------|---------|
 | [02_Analysis/SCRIPTS.md](02_Analysis/SCRIPTS.md) | Script inventory: active vs deprecated, dependencies, usage |
-| [docs/CHANGELOG.md](CHANGELOG.md) | Version history, reviewer tracking, major changes |
+| [docs/PATTERN_CLASSIFICATION.md](docs/PATTERN_CLASSIFICATION.md) | Pattern classification framework (canonical reference) |
+| [docs/CHANGELOG.md](docs/CHANGELOG.md) | Version history, reviewer tracking, major changes |
 
 ### Scientific Context
 
 | File | Purpose |
 |------|---------|
-| [docs/biological_context.md](docs/biological_context.md) | Literature review, mechanistic model, clinical relevance |
+| [docs/bio_notes.md](docs/bio_notes.md) | Curated biological notes and mechanistic context |
 | [docs/MIGRATION.md](docs/MIGRATION.md) | Container setup, environment configuration |
-| Plot folder READMEs | Scientific documentation for each analysis (see below) |
 
 ### Plot-Specific Documentation
 
-Each major plot folder contains a comprehensive `README.md` with:
-- Generating script and runtime
-- Plot descriptions (axes, colors, statistics)
-- Methods (GSEA parameters, statistical tests, sample sizes)
-- Interpretation guide
-- Key findings and biological context
+Each major plot folder contains a comprehensive `README.md` with generating scripts, plot descriptions, methods, and interpretation guides.
 
-**Documented folders**:
-- `Cross_database_validation/` - Pattern validation across databases
+**Key documented folders**:
+- `Trajectory_Flow/` - Bump charts, alluvial diagrams, interactive explorers
+- `Cross_database_validation/` - Pattern validation across 10 databases
 - `Ribosome_paradox/` - Translation crisis core finding
 - `Publication_Figures/` - Manuscript-ready integrated figures
 - `Mito_translation_cascade/` - Energy → translation → synapse cascade
-- `Synaptic_ribosomes/` - Compartment-specific ribosome analysis
-- *(More READMEs available in other plot folders)*
 
 ## 🛠️ Setup
 
@@ -202,35 +254,40 @@ cp .env.example .devcontainer/.env
 
 ### For Biological Interpretation
 
-1. **Publication Figures** (`03_Results/02_Analysis/Plots/Publication_Figures/`)
+1. **Interactive Trajectory Explorer** (`03_Results/02_Analysis/Plots/Trajectory_Flow/`)
+   - `interactive_bump_dashboard.html` - Explore all pathway trajectories interactively
+   - `bump_focused_FINAL_paper_combined.pdf` - Key publication figure
+
+2. **Publication Figures** (`03_Results/02_Analysis/Plots/Publication_Figures/`)
    - Fig1: Ribosome paradox visualization
    - Fig2: MitoCarta trajectory patterns
    - Fig3: Pattern classification summary across databases
 
-2. **Ribosome Paradox** (`03_Results/02_Analysis/Plots/Ribosome_paradox/`)
-   - Three-pool trajectory plot showing divergent compensation vs collapse
-   - Data tables with statistics for all pathways
-
 3. **Cross-Database Validation** (`03_Results/02_Analysis/Plots/Cross_database_validation/`)
-   - 10 trajectory comparative plots (one per database)
-   - Pattern summary showing compensation dominance
+   - Pattern validation across 10 pathway databases
+   - Compensation dominance (~60% of significant pathways)
 
 ### For Methods and Reproducibility
 
-1. **Main pipeline script**: `02_Analysis/1a.Main_pipeline.R`
+1. **Main pipeline script**: `02_Analysis/1.1.main_pipeline.R`
    - Checkpoint-based analysis (caches results for fast re-runs)
    - Complete DE and GSEA workflow
 
 2. **Script inventory**: `02_Analysis/SCRIPTS.md`
-   - Active vs deprecated scripts
-   - Dependencies and run order
-   - Quick reference commands
+   - Active vs deprecated scripts, dependencies, run order
+   - Pattern classification workflow documentation
+
+3. **Pattern framework**: `docs/PATTERN_CLASSIFICATION.md`
+   - 8-pattern classification system
+   - Active vs Passive distinction, thresholds
 
 ### For Data Access
 
+- **Master tables** (comprehensive analysis outputs):
+  - `03_Results/02_Analysis/master_gsea_table.csv` (109K rows, all pathways + patterns)
+  - `03_Results/02_Analysis/master_gsva_*.csv` (GSVA scores, focused + all)
 - **DE results**: `03_Results/02_Analysis/DE_results/*.csv` (9 contrast tables)
-- **GSEA results**: `03_Results/02_Analysis/checkpoints/*.rds` (R objects) or `Python_exports/*.csv` (flat files)
-- **Checkpoints**: `03_Results/02_Analysis/checkpoints/` (cached computation for fast re-analysis)
+- **GSEA results**: `03_Results/02_Analysis/checkpoints/*.rds` (R) or `Python_exports/*.csv` (flat files)
 
 ## 🔬 Methodology
 
@@ -240,7 +297,7 @@ cp .env.example .devcontainer/.env
 
 **Upstream Processing (Alignment & Quantification):**
 
-Raw FASTQ files were processed using a standardized bulk RNA-seq pipeline ([bulkRNAseq_pipeline_scripts](https://github.com/tony-zhelonkin/bulkRNAseq_pipeline_scripts)) with tools version-locked at [scbio-docker v0.2.0](https://github.com/tony-zhelonkin/scbio-docker/tree/v0.2.0).
+Raw FASTQ files were processed using custom bulk RNA-seq pipeline ([bulkRNAseq_pipeline_scripts](https://github.com/tony-zhelonkin/bulkRNAseq_pipeline_scripts)) with tools version-locked at [scbio-docker v0.2.0](https://github.com/tony-zhelonkin/scbio-docker/tree/v0.2.0).
 
 **Reference genome:**
 - **Assembly:** GRCh38.p14 (hg38, GCF_000001405.40)
@@ -281,7 +338,7 @@ STAR --runMode genomeGenerate \
 ```
 
 **Post-alignment QC:**
-- **Strand inference:** RSeQC `infer_experiment.py` (determined: non-stranded library)
+- **Strand inference:** RSeQC `infer_experiment.py` (determined non-stranded library)
 - **Alignment metrics:** Picard `CollectRnaSeqMetrics`, `MarkDuplicates`
 - **Read statistics:** samtools `flagstat`
 - **Comprehensive reporting:** MultiQC aggregation
@@ -319,7 +376,7 @@ Where group = genotype × timepoint (6 levels)
 ```
 
 **Statistical framework:**
-1. Linear model fitting: `voomLmFit()` with precision weights
+1. Linear model fitting: `voomLmFit()` without precision weights
 2. Contrast estimation: `contrasts.fit()` for 9 biological comparisons
 3. Empirical Bayes moderation: `eBayes(robust = TRUE)`
 4. Multiple testing: Benjamini-Hochberg FDR correction
@@ -372,21 +429,18 @@ Contrasts mapped to developmental stages:
 | Stage | G32A Contrast | R403C Contrast | Biological Question |
 |-------|---------------|----------------|---------------------|
 | Early | G32A_vs_Ctrl_D35 | R403C_vs_Ctrl_D35 | Initial mutation effect |
-| Late | G32A_vs_Ctrl_D65 | R403C_vs_Ctrl_D65 | Mature state effect |
 | TrajDev | Maturation_G32A_specific | Maturation_R403C_specific | Trajectory deviation |
+| Late | G32A_vs_Ctrl_D65 | R403C_vs_Ctrl_D65 | Mature state effect |
 
-**Pattern definitions:**
-| Pattern | Criteria | Interpretation |
-|---------|----------|----------------|
-| Compensation | Early defect + opposing TrajDev + Late improvement | Active adaptive response |
-| Progressive | Early defect + amplifying TrajDev + Late worsening | Cumulative damage |
-| Persistent | Stable defect, no TrajDev change | Static dysfunction |
-| Late_onset | No Early defect, Late defect emerges | Maturation-dependent |
-| Transient | Early defect, resolved by Late | Developmental delay |
+**Pattern system:** 8 mutually exclusive patterns distinguishing active (significant TrajDev) vs passive (normal developmental buffering) responses. See [Pattern Classification System](#-pattern-classification-system) section above for pattern definitions.
 
-**Thresholds:**
-- Defect: |NES| > 0.5 minimum, > 1.0 for clear effect
-- Change: |ΔNES| > 0.5 between stages
+**Key thresholds:**
+- Significance: p.adjust < 0.05 (High), < 0.10 (Medium)
+- Effect size: |NES| > 0.5 (minimum), > 1.0 (strong)
+- Improvement: |Late|/|Early| < 0.7 (≥30% reduction)
+- Worsening: |Late|/|Early| > 1.3 (≥30% increase)
+
+**Full specification:** `docs/PATTERN_CLASSIFICATION.md`
 
 ### Reproducibility Features
 
@@ -408,14 +462,7 @@ Contrasts mapped to developmental stages:
 - **Base:** R 4.3+ (via scbio-dock v0.5.1 container)
 - **Package manifest:** `R_session_info.txt` (complete sessionInfo output)
 - **Package list:** `R_packages.txt` (simple version listing)
-- **Runtime installs:** See `02_Analysis/0.runtime_installs.R` for additional packages
-
-**Key R packages:**
-- Differential expression: edgeR (3.42+), limma (3.56+), DESeq2 (1.40+)
-- GSEA: clusterProfiler (4.8+), fgsea (1.26+), msigdbr (7.5+)
-- Annotation: org.Hs.eg.db (3.17+)
-- Co-expression: WGCNA (1.72+)
-- Visualization: ggplot2 (3.4+), pheatmap (1.0+), patchwork (1.1+)
+- **Runtime installs:** See `02_Analysis/0.1.runtime_installs.R` for additional packages
 
 **Python environment:**
 - **Base:** Python 3.9+ (via scbio-dock v0.5.1 container)
@@ -430,7 +477,7 @@ Contrasts mapped to developmental stages:
 **To reproduce exact environment:**
 ```bash
 # R packages - manually verify against R_session_info.txt
-Rscript 02_Analysis/0.runtime_installs.R
+Rscript 02_Analysis/0.1.runtime_installs.R
 
 # Python packages - install exact versions
 pip install -r python_requirements_freeze.txt
@@ -452,13 +499,15 @@ Raw fastq files pre-processed with the custom scripts and bioinformatics tools v
 This project utilized AI tools to accelerate analysis pipeline development, biological interpretation, and documentation:
 
 **[Claude Code](https://github.com/anthropics/claude-code) (Anthropic):**
-- **Primary tool** for pipeline development, refactoring, and visualization implementation
+- **Primary tool** for refactoring initial scripts into a streamlined pipeline, debugging, and visualization implementation
 - **Custom agents** developed for specialized tasks:
-  - `bio-research-visualizer` (November 2025): Deep web research for biological mechanism interpretation, literature synthesis, and visualization strategy recommendations. Used for cross-database validation framework development and ribosome paradox biological interpretation.
-  - `rnaseq-insight-explorer` (November 2025): RNAseq results exploration, pattern discovery, critical evaluation of biological claims, and data-driven visualization recommendations. Used for rough cross-database GSEA results querry and publication figure design.
+  - `bio-research-visualizer`: Deep web research for biological mechanism interpretation, literature synthesis, and visualization strategy recommendations. Used for cross-database validation framework development and ribosome paradox biological interpretation.
+  - `rnaseq-insight-explorer`: RNAseq results exploration, pattern discovery, critical evaluation of biological claims, and data-driven visualization recommendations. Used for rough cross-database GSEA results querry and publication figure design.
+  - `readme-auditor`: for quick alignment of the output files, code with a directory specific README
 
 **[Gemini CLI](https://github.com/google-gemini/gemini-cli) (Google):**
-- Supporting tool for specific documentation restructure and code review 
+- Primarily used for the implementation of the interactive pathway dashboard `3.8.viz_interactive_bump_dashboard.py`
+- Supporting tool for specific documentation restructure and code review, web
 
 **[Codex](https://github.com/openai/codex) (OpenAI):**
 - Supporting tool for git management
@@ -467,13 +516,36 @@ This project utilized AI tools to accelerate analysis pipeline development, biol
 
 **Transparency:** Analysis scripts, custom agent definitions (`.claude/agents/`), and project instructions (`CLAUDE.md`) are version-controlled, and committed to the repo for reproducibility .
 
+## Documentation
+
+### Quick Start
+- **[SETUP.md](SETUP.md)** - Quick setup guide (post-migration)
+- **[INSTALL.md](INSTALL.md)** - Detailed installation instructions
+
+### Analysis Reference
+- **[CLAUDE.md](CLAUDE.md)** - Claude Code instructions, architecture, troubleshooting
+- **[02_Analysis/SCRIPTS.md](02_Analysis/SCRIPTS.md)** - Complete script inventory, dependencies, pattern workflow
+- **[docs/PATTERN_CLASSIFICATION.md](docs/PATTERN_CLASSIFICATION.md)** - 8-pattern trajectory classification framework
+
+### Scientific Documentation
+See **[docs/](docs/)** directory for:
+- **[Biological Notes](docs/bio_notes.md)** - Curated literature notes and mechanistic model
+- **[CHANGELOG](docs/CHANGELOG.md)** - Analysis improvements since v1.0
+- **[Migration Notes](docs/MIGRATION.md)** - Technical migration details
+
+### Results Documentation
+- **[Results README](03_Results/02_Analysis/README.md)** - Master tables documentation
+- **[Trajectory Flow README](03_Results/02_Analysis/Plots/Trajectory_Flow/README.md)** - Bump charts and interactive explorers
+- **[Plot READMEs](03_Results/02_Analysis/Plots/)** - Individual visualization guides
+
 ### Data Availability
 
-**Input data:**
-- Count matrices: `03_Results/01_Preprocessing/04_FeatureCounts/count_matrices_fc/`
-- Sample metadata: Same location
+**Master tables** (comprehensive summary outputs):
+- `master_gsea_table.csv` - All GSEA pathways with pattern classifications (109K rows)
+- `master_gsva_focused_table.csv` - GSVA scores for 7 key modules
+- `master_gsva_all_table.csv` - GSVA scores for all pathways (87K rows)
 
-**Output data:**
+**Raw outputs:**
 - DE tables: `03_Results/02_Analysis/DE_results/*.csv`
 - GSEA results: `03_Results/02_Analysis/checkpoints/*.rds`
 - Visualizations: `03_Results/02_Analysis/Plots/`

@@ -1,0 +1,4 @@
+0_Data/* linguist-vendored
+03_Results/01_Preprocessing/* linguist-vendored
+*.R linguist-language=R
+*.Rmd linguist-language=R

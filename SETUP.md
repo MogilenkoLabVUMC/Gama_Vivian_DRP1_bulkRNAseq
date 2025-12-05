@@ -1,5 +1,7 @@
 # Quick Setup Guide
 
+> **Note**: This is a quick-start guide. For detailed installation instructions including Docker image build, package troubleshooting, and reproducibility details, see [INSTALL.md](INSTALL.md).
+
 Step-by-step instructions to get started with the migrated GVDRP1 bulk RNA-seq analysis repository after migration
 
 ## Prerequisites
@@ -148,8 +150,9 @@ config <- list(
   metadata_file = "03_Results/01_Preprocessing/04_FeatureCounts/count_matrices_fc/metadata.csv",
   out_root      = "03_Results/02_Analysis",
   helper_root   = "01_Scripts/RNAseq-toolkit",   # git submodule
-  p_cutoff      = 0.05,
-  fc_cutoff     = 2,
+  fdr_cutoff    = 0.05,      # FDR threshold for DEG classification (BH-adjusted)
+  p_cutoff      = 0.05,      # Raw p-value threshold for volcano plots (p mode)
+  fc_cutoff     = 2,         # |log2FC| >= 2 (4-fold change) for volcano visualization
   ...
 )
 ```
