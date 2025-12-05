@@ -21,8 +21,9 @@ config <- list(
   out_root      = "03_Results/02_Analysis",
   helper_root   = "01_Scripts/RNAseq-toolkit",   # <<-- git submodule
   ## analysis parameters
-  p_cutoff      = 0.05,
-  fc_cutoff     = 2,
+  fdr_cutoff    = 0.05,      # FDR threshold for DEG classification (decideTests with BH)
+  p_cutoff      = 0.05,      # Raw p-value threshold for volcano plots (p mode)
+  fc_cutoff     = 2,         # |log2FC| >= 2 (4-fold change) for volcano visualization
   calcium_genes = c(
       "NNAT","CACNG3","CACNA1S","ATP2A1",  # NNAT for Neuronatin gene
       "RYR1","MYLK3","VDR","STIM1","STIM2",
@@ -192,7 +193,7 @@ model_objs <- load_or_compute(
     fit <- contrasts.fit(fit, contrasts) |>
            eBayes(robust = TRUE)
 
-    de_results <- decideTests(fit, p.value = config$p_cutoff)
+    de_results <- limma::decideTests(fit, adjust.method = "BH", p.value = config$fdr_cutoff)
 
     ## return all objects as a list
     list(fit = fit, v = v, de_results = de_results,

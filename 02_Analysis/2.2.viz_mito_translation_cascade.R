@@ -1,10 +1,14 @@
 ###############################################################################
-##  Mechanistic Cascade: Energy Crisis → Translation Failure                ##
-##  Gene sets extracted from  significant GSEA pathways                     ##
+##  Mitochondrial & Calcium Signaling Cascade Heatmap                       ##
+##  Focused visualization: Complex V, Calcium Genes, Mt Central Dogma       ##
+##                                                                           ##
+##  Style: Matches Panel_C_Expression_Heatmap.pdf (synaptic ribosomes)      ##
+##  - Hierarchical clustering within modules                                 ##
+##  - Narrower logFC scale (-0.6 to 0.6) to reveal subtle patterns          ##
+##  - Dendrogram showing gene co-regulation                                  ##
 ###############################################################################
 
 library(here)
-library(ggplot2)
 library(dplyr)
 library(tidyr)
 library(ComplexHeatmap)
@@ -16,11 +20,8 @@ source(here("01_Scripts/R_scripts/color_config.R"))
 
 message("📂 Loading checkpoints...")
 checkpoint_dir <- here("03_Results/02_Analysis/checkpoints")
-all_gsea_results <- readRDS(file.path(checkpoint_dir, "all_gsea_results.rds"))
-syngo_gsea_results <- readRDS(file.path(checkpoint_dir, "syngo_gsea_results.rds"))
 mitocarta_gsea_results <- readRDS(file.path(checkpoint_dir, "mitocarta_gsea_results.rds"))
 fit <- readRDS(file.path(checkpoint_dir, "fit_object.rds"))
-de_results <- readRDS(file.path(checkpoint_dir, "de_results.rds"))
 
 # Output directory
 out_dir <- here("03_Results/02_Analysis/Plots/Mito_translation_cascade")
@@ -39,12 +40,28 @@ all_contrasts <- c(
 )
 
 contrast_labels <- c(
-  "G32A\nEarly", "G32A\nTrajDev", "G32A\nLate",
-  "R403C\nEarly", "R403C\nTrajDev", "R403C\nLate"
+  "Early", "TrajDev", "Late",
+  "Early", "TrajDev", "Late"
 )
 
-# Max genes per module
-MAX_GENES_PER_MODULE <- 20
+# Calcium genes from main pipeline config - MUST include NNAT and PNPO
+# These are genes of specific interest for calcium signaling in the study
+CALCIUM_GENES_CONFIG <- c(
+  "NNAT",    # Neuronatin - key imprinted gene, calcium regulation
+
+  "CACNG3",  # Voltage-dependent calcium channel gamma-3
+  "CACNA1S", # Voltage-dependent L-type calcium channel alpha-1S
+  "ATP2A1",  # Sarcoplasmic/endoplasmic reticulum calcium ATPase 1
+  "RYR1",    # Ryanodine receptor 1 (skeletal muscle type)
+  "MYLK3",   # Myosin light chain kinase 3
+  "VDR",     # Vitamin D receptor (regulates calcium homeostasis)
+  "STIM1",   # Stromal interaction molecule 1 (ER calcium sensor)
+  "STIM2",   # Stromal interaction molecule 2
+  "ORAI1",   # Calcium release-activated calcium modulator 1
+  "CALB1",   # Calbindin 1 (calcium-binding protein)
+  "CALR",    # Calreticulin (calcium-binding ER protein)
+  "PNPO"     # Pyridoxamine 5'-phosphate oxidase (B6 metabolism, affects calcium)
+)
 
 ###############################################################################
 ##  Helper Functions                                                         ##
@@ -86,30 +103,6 @@ extract_pathway_genes <- function(gsea_result, pathway_name, exact_match = FALSE
   return(genes)
 }
 
-#' Limit gene set to top N by absolute logFC
-#' @param genes Character vector of gene symbols
-#' @param logfc_matrix Matrix with genes as rows, contrasts as columns
-#' @param n Maximum number of genes to return
-#' @return Character vector of top N genes
-limit_genes <- function(genes, logfc_matrix, n = 20) {
-  genes_present <- genes[genes %in% rownames(logfc_matrix)]
-
-  if (length(genes_present) == 0) return(character(0))
-  if (length(genes_present) <= n) return(genes_present)
-
-  # Rank by mean absolute logFC across TrajDev contrasts
-  trajdev_cols <- grep("TrajDev", colnames(logfc_matrix))
-  if (length(trajdev_cols) == 0) {
-    # Fallback: use all columns
-    mean_abs_fc <- rowMeans(abs(logfc_matrix[genes_present, , drop = FALSE]), na.rm = TRUE)
-  } else {
-    mean_abs_fc <- rowMeans(abs(logfc_matrix[genes_present, trajdev_cols, drop = FALSE]), na.rm = TRUE)
-  }
-
-  top_genes <- names(sort(mean_abs_fc, decreasing = TRUE)[1:n])
-  return(top_genes)
-}
-
 ###############################################################################
 ##  Extract logFC Matrix for All Contrasts                                  ##
 ###############################################################################
@@ -131,97 +124,86 @@ colnames(logfc_matrix) <- contrast_labels
 message(sprintf("  Extracted logFC for %d contrasts\n", ncol(logfc_matrix)))
 
 ###############################################################################
-##  Extract Gene Sets from REAL Significant Pathways                        ##
+##  Extract Gene Sets: 3 FOCUSED MODULES                                    ##
+##  1. ATP Synthase (Complex V) - ATP5* genes from KEGG OXPHOS pathway      ##
+##  2. Calcium Signaling - Config genes (NNAT, PNPO, etc.)                  ##
+##  3. Mitochondrial Central Dogma - MitoCarta pathway                      ##
 ###############################################################################
 
-message("📊 Extracting gene sets from significant GSEA pathways...\n")
+message("📊 Extracting gene sets for 3 focused modules...\n")
 
-## MODULE 1: Mitochondrial Central Dogma (MitoCarta)
-message("  Module 1: Mitochondrial Central Dogma (MitoCarta)...")
-central_dogma_genes_raw <- extract_pathway_genes(
+## MODULE 1: ATP Synthase (Complex V) - TRUE ATP5* genes
+## The GOCC_ATPASE_COMPLEX contains chromatin remodeling ATPases (wrong!)
+## We use curated ATP synthase subunit genes from KEGG OXPHOS pathway
+message("  Module 1: ATP Synthase (Complex V) - Curated ATP5* subunits...")
+
+# ATP synthase F1 subunits (catalytic core)
+atp_f1 <- c("ATP5F1A", "ATP5F1B", "ATP5F1C", "ATP5F1D", "ATP5F1E")
+# ATP synthase FO subunits (proton channel)
+atp_fo <- c("ATP5PB", "ATP5MC1", "ATP5MC2", "ATP5MC3", "ATP5PD", "ATP5PF",
+            "ATP5MF", "ATP5MG", "ATP5PO", "ATP5ME", "ATP5MD")
+# ATP synthase peripheral stalk
+atp_stalk <- c("ATP5MJ", "ATP5MK", "ATP5ML", "ATP5MF")
+# Coupling factors and assembly factors
+atp_assembly <- c("ATPAF1", "ATPAF2", "TMEM70", "ATP5IF1")
+
+atp_synthase_genes_curated <- unique(c(atp_f1, atp_fo, atp_stalk, atp_assembly))
+atp_synthase_genes <- atp_synthase_genes_curated[atp_synthase_genes_curated %in% rownames(logfc_matrix)]
+message(sprintf("    ATP Synthase: %d/%d curated genes found in expression data",
+                length(atp_synthase_genes), length(atp_synthase_genes_curated)))
+
+## MODULE 2: Calcium Signaling - Config genes (prioritized, curated list)
+message("  Module 2: Calcium Signaling - Config genes (incl. NNAT, PNPO)...")
+calcium_genes <- CALCIUM_GENES_CONFIG[CALCIUM_GENES_CONFIG %in% rownames(logfc_matrix)]
+message(sprintf("    Calcium genes: %d/%d config genes found in expression data",
+                length(calcium_genes), length(CALCIUM_GENES_CONFIG)))
+
+# Report which config genes are missing
+missing_calcium <- setdiff(CALCIUM_GENES_CONFIG, rownames(logfc_matrix))
+if (length(missing_calcium) > 0) {
+  message(sprintf("    Missing: %s", paste(missing_calcium, collapse = ", ")))
+}
+
+## MODULE 3: Mitochondrial Central Dogma (MitoCarta)
+## Extract core enrichment genes, then limit to top 25 by mean |logFC| across TrajDev
+message("  Module 3: Mitochondrial Central Dogma (MitoCarta)...")
+central_dogma_genes_all <- extract_pathway_genes(
   mitocarta_gsea_results[["Maturation_G32A_specific"]],
   "Mitochondrial_central_dogma", exact_match = TRUE
 )
+central_dogma_genes_present <- central_dogma_genes_all[central_dogma_genes_all %in% rownames(logfc_matrix)]
 
-## MODULE 2: Mitochondrial Ribosomes (MitoCarta)
-message("  Module 2: Mitochondrial Ribosomes (MitoCarta)...")
-mito_ribosome_genes_raw <- extract_pathway_genes(
-  mitocarta_gsea_results[["Maturation_G32A_specific"]],
-  "Mitochondrial_ribosome", exact_match = TRUE
-)
-
-## MODULE 3: ATP Synthase (GOCC) - Top hit from Fig 4
-# Replaces generic OXPHOS
-message("  Module 3: ATP Synthase (GOCC - Top hit from Fig 4)...")
-oxphos_genes_raw <- extract_pathway_genes(
-  all_gsea_results[["Maturation_G32A_specific"]][["gocc"]],
-  "GOCC_ATPASE_COMPLEX", exact_match = TRUE
-)
-
-## MODULE 4 & 5: Synaptic Ribosomes (SynGO) - split into Common vs Postsynaptic-only
-message("  Module 4 & 5: Synaptic Ribosomes (SynGO)...")
-message("    Extracting presynaptic ribosome...")
-presynaptic_ribo_genes <- extract_pathway_genes(
-  syngo_gsea_results[["Maturation_G32A_specific"]],
-  "presynaptic ribosome"
-)
-
-message("    Extracting postsynaptic ribosome...")
-postsynaptic_ribo_genes <- extract_pathway_genes(
-  syngo_gsea_results[["Maturation_G32A_specific"]],
-  "postsynaptic ribosome"
-)
-
-# Split into Common (intersection) and Postsynaptic-only (setdiff)
-synaptic_common_genes_raw <- intersect(presynaptic_ribo_genes, postsynaptic_ribo_genes)
-postsynaptic_only_genes_raw <- setdiff(postsynaptic_ribo_genes, presynaptic_ribo_genes)
-
-message(sprintf("    Common (pre ∩ post): %d genes", length(synaptic_common_genes_raw)))
-message(sprintf("    Postsynaptic-only: %d genes", length(postsynaptic_only_genes_raw)))
-
-## MODULE 6: Calcium Signaling (Reactome) - Top hit from Fig 4
-# Replaces hardcoded config genes
-# NOTE: Using G32A Early contrast where this pathway is most significant (NES=1.78)
-message("  Module 6: Calcium Signaling (Reactome - Top hit from Fig 4)...")
-calcium_genes_raw <- extract_pathway_genes(
-  all_gsea_results[["G32A_vs_Ctrl_D35"]][["reactome"]],
-  "REACTOME_ELEVATION_OF_CYTOSOLIC_CA2_LEVELS", exact_match = TRUE
-)
+# Limit to top 25 by mean |logFC| across TrajDev contrasts (like Panel_C uses focused set)
+MAX_CENTRAL_DOGMA_GENES <- 25
+if (length(central_dogma_genes_present) > MAX_CENTRAL_DOGMA_GENES) {
+  trajdev_cols <- grep("TrajDev", colnames(logfc_matrix))
+  mean_abs_fc <- rowMeans(abs(logfc_matrix[central_dogma_genes_present, trajdev_cols, drop = FALSE]), na.rm = TRUE)
+  central_dogma_genes <- names(sort(mean_abs_fc, decreasing = TRUE)[1:MAX_CENTRAL_DOGMA_GENES])
+  message(sprintf("    Limiting to top %d genes by |logFC| (from %d total)",
+                  MAX_CENTRAL_DOGMA_GENES, length(central_dogma_genes_present)))
+} else {
+  central_dogma_genes <- central_dogma_genes_present
+}
 
 ###############################################################################
-##  Limit Genes Per Module (Top 20 by |logFC|)                              ##
+##  Combine Gene Sets into 3 Modules                                        ##
 ###############################################################################
 
-message(sprintf("📊 Limiting to top %d genes per module by |logFC|...\n", MAX_GENES_PER_MODULE))
+message("\n📊 Building heatmap data matrix...\n")
 
-central_dogma_genes <- limit_genes(central_dogma_genes_raw, logfc_matrix, MAX_GENES_PER_MODULE)
-mito_ribosome_genes <- limit_genes(mito_ribosome_genes_raw, logfc_matrix, MAX_GENES_PER_MODULE)
-oxphos_genes <- limit_genes(oxphos_genes_raw, logfc_matrix, MAX_GENES_PER_MODULE)
-synaptic_common_genes <- limit_genes(synaptic_common_genes_raw, logfc_matrix, MAX_GENES_PER_MODULE)
-postsynaptic_only_genes <- limit_genes(postsynaptic_only_genes_raw, logfc_matrix, MAX_GENES_PER_MODULE)
-calcium_genes <- limit_genes(calcium_genes_raw, logfc_matrix, MAX_GENES_PER_MODULE)
-
-message(sprintf("  Mt Central Dogma: %d → %d genes", length(central_dogma_genes_raw), length(central_dogma_genes)))
-message(sprintf("  Mt Ribosomes: %d → %d genes", length(mito_ribosome_genes_raw), length(mito_ribosome_genes)))
-message(sprintf("  ATP Synthase: %d → %d genes", length(oxphos_genes_raw), length(oxphos_genes)))
-message(sprintf("  Synaptic Common: %d → %d genes", length(synaptic_common_genes_raw), length(synaptic_common_genes)))
-message(sprintf("  Postsynaptic Only: %d → %d genes", length(postsynaptic_only_genes_raw), length(postsynaptic_only_genes)))
-message(sprintf("  Calcium Signaling: %d → %d genes\n", length(calcium_genes_raw), length(calcium_genes)))
-
-###############################################################################
-##  Combine Gene Sets into Modules                                          ##
-###############################################################################
-
+# Define modules with clear, descriptive names
 all_module_genes <- list(
-  "1. Mt Central Dogma" = central_dogma_genes,
-  "2. Mt Ribosomes" = mito_ribosome_genes,
-  "3. ATP Synthase (Complex V)" = oxphos_genes,
-  "4. Synaptic Ribo (Common)" = synaptic_common_genes,
-  "5. Postsynaptic Ribo (Only)" = postsynaptic_only_genes,
-  "6. Calcium Signaling" = calcium_genes
+  "ATP Synthase (Complex V)" = atp_synthase_genes,
+  "Calcium Signaling" = calcium_genes,
+  "Mt Central Dogma" = central_dogma_genes
 )
 
-# Build cascade data matrix
+# Report gene counts
+for (mod in names(all_module_genes)) {
+  message(sprintf("  %s: %d genes", mod, length(all_module_genes[[mod]])))
+}
+
+# Build cascade data matrix with module annotation
 cascade_data <- data.frame()
 module_annotation <- c()
 
@@ -236,75 +218,55 @@ for (module_name in names(all_module_genes)) {
   }
 }
 
-message(sprintf("  Total genes for heatmap: %d\n", nrow(cascade_data)))
+message(sprintf("\n  Total genes for heatmap: %d\n", nrow(cascade_data)))
 
 ###############################################################################
-##  Create Cascade Heatmap                                                  ##
+##  Create Cascade Heatmap (Panel_C style: clustering + dendrogram)         ##
 ###############################################################################
 
-message("📊 Creating mechanistic cascade heatmap...\n")
+message("📊 Creating mechanistic cascade heatmap (Panel_C style)...\n")
 
-# Color scheme for logFC (using unified palette from color_config.R)
-col_fun <- logfc_color_scale(limits = c(-1.5, 1.5))
+# Color scheme for logFC - NARROWER SCALE to reveal subtle patterns
+# Using -0.6 to 0.6 like Panel_C (synaptic ribosomes)
+col_fun <- colorRamp2(c(-0.6, 0, 0.6), c("#2166AC", "#F7F7F7", "#B35806"))
 
-# Module colors (from unified color_config.R)
-module_colors <- MODULE_COLORS
-
-# Row annotation
-ha_module <- rowAnnotation(
-  Module = module_annotation,
-  col = list(Module = module_colors),
-  show_annotation_name = FALSE,
-  annotation_legend_param = list(
-    Module = list(
-      title = "Module",
-      title_gp = gpar(fontface = "bold", fontsize = 9),
-      labels_gp = gpar(fontsize = 8)
-    )
-  ),
-  width = unit(0.4, "cm")
+# Module colors - simplified for 3 modules
+module_colors <- c(
+ "ATP Synthase (Complex V)" = "#2E8B57",  # Sea green
+ "Calcium Signaling"        = "#DC143C",  # Crimson
+ "Mt Central Dogma"         = "#9467BD"   # Purple
 )
 
-# Column annotation
-mutation_groups <- c(rep("G32A", 3), rep("R403C", 3))
-trajectory_groups <- rep(c("Early", "TrajDev", "Late"), 2)
+# Convert module annotation to factor with explicit order
+module_factor <- factor(module_annotation, levels = names(all_module_genes))
 
-## Use unified heatmap annotation colors (from color_config.R)
-## These are specifically designed to avoid conflicts with the blue-white-orange gradient
-## and to be visually distinct from each other (purple/crimson mutations, teal stages)
-ha_col <- HeatmapAnnotation(
-  Mutation = mutation_groups,
-  Trajectory = trajectory_groups,
-  col = list(
-    Mutation = HEATMAP_ANNOTATION_COLORS$mutation[c("G32A", "R403C")],
-    Trajectory = HEATMAP_ANNOTATION_COLORS$stage
-  ),
-  annotation_name_side = "left",
-  annotation_name_gp = gpar(fontsize = 9),
-  simple_anno_size = unit(0.3, "cm"),
+# Row annotation (right side, like Panel_C)
+ha_module <- rowAnnotation(
+  Module = module_factor,
+  col = list(Module = module_colors),
+  show_annotation_name = TRUE,
+  annotation_name_side = "top",
   annotation_legend_param = list(
-    Mutation = list(
-      title = "Mutation",
-      title_gp = gpar(fontface = "bold", fontsize = 9),
-      labels_gp = gpar(fontsize = 8)
-    ),
-    Trajectory = list(
-      title = "Stage",
-      title_gp = gpar(fontface = "bold", fontsize = 9),
-      labels_gp = gpar(fontsize = 8)
+    Module = list(
+      title = "Functional Module",
+      title_gp = gpar(fontface = "bold", fontsize = 10),
+      labels_gp = gpar(fontsize = 9)
     )
   )
 )
 
-# Figure dimensions
+# Column split for mutations
+column_split <- factor(rep(c("G32A", "R403C"), each = 3), levels = c("G32A", "R403C"))
+
+# Figure dimensions - taller to accommodate genes with clustering
 n_genes <- nrow(cascade_data)
-fig_height <- max(8, n_genes * 0.25 + 3)
-fig_width <- 7
+fig_height <- max(10, n_genes * 0.18 + 2)  # Adjusted for better gene label visibility
+fig_width <- 6
 
 message(sprintf("  Figure dimensions: %.1f x %.1f inches (%d genes)\n",
                 fig_width, fig_height, n_genes))
 
-# Create heatmap
+# Create heatmap with CLUSTERING WITHIN MODULES (like Panel_C)
 pdf(file.path(out_dir, "Mechanistic_Cascade_Heatmap.pdf"),
     width = fig_width, height = fig_height)
 
@@ -313,50 +275,46 @@ ht <- Heatmap(
   name = "logFC",
   col = col_fun,
 
-  # Row settings
+  # Row settings - ENABLE CLUSTERING within each module (key difference from before!)
   row_names_side = "left",
-  row_names_gp = gpar(fontsize = 7),
-  cluster_rows = FALSE,
-  show_row_dend = FALSE,
-  row_split = factor(module_annotation, levels = names(all_module_genes)),
-  row_title = gsub("^[0-9]+\\. ", "", names(all_module_genes)),
-  row_title_gp = gpar(fontface = "bold", fontsize = 9),
+  row_names_gp = gpar(fontsize = 8),
+  cluster_rows = TRUE,              # <-- ENABLE clustering within modules
+  cluster_row_slices = FALSE,       # Don't reorder module slices
+  show_row_dend = TRUE,             # <-- SHOW dendrogram
+  row_dend_width = unit(10, "mm"),  # Dendrogram width
+  row_split = module_factor,
+  row_title_gp = gpar(fontface = "bold", fontsize = 10),
   row_title_rot = 0,
   row_gap = unit(2, "mm"),
 
   # Column settings
   cluster_columns = FALSE,
   show_column_dend = FALSE,
-  column_names_gp = gpar(fontsize = 8),
-  column_names_rot = 0,
-  column_split = factor(mutation_groups, levels = c("G32A", "R403C")),
-  column_title = "Mechanistic Cascade: Pathway Core Genes (Top 20 by |logFC|)",
+  column_names_gp = gpar(fontsize = 9),
+  column_split = column_split,
   column_title_gp = gpar(fontface = "bold", fontsize = 11),
+  column_gap = unit(2, "mm"),
 
   # Annotations
-  left_annotation = ha_module,
-  top_annotation = ha_col,
+  right_annotation = ha_module,
 
   # Appearance
   border = TRUE,
-  rect_gp = gpar(col = "gray90", lwd = 0.2),
-  width = unit(3.5, "cm"),
+  rect_gp = gpar(col = "gray80", lwd = 0.5),
 
   # Legend
   heatmap_legend_param = list(
     title = "logFC",
-    at = c(-1.5, -0.75, 0, 0.75, 1.5),
-    labels = c("-1.5", "-0.75", "0", "0.75", "1.5"),
-    legend_height = unit(3, "cm"),
-    title_gp = gpar(fontface = "bold", fontsize = 9),
-    labels_gp = gpar(fontsize = 8)
+    at = c(-0.6, -0.3, 0, 0.3, 0.6),
+    labels = c("-0.6", "-0.3", "0", "0.3", "0.6"),
+    legend_height = unit(4, "cm"),
+    title_gp = gpar(fontface = "bold", fontsize = 10)
   )
 )
 
 draw(ht,
      heatmap_legend_side = "right",
-     annotation_legend_side = "right",
-     merge_legend = TRUE)
+     column_title = "Mitochondrial & Calcium Gene Expression Trajectories")
 
 dev.off()
 
@@ -380,32 +338,47 @@ for (module_name in names(all_module_genes)) {
 
     module_stats <- rbind(module_stats, data.frame(
       Module = module_name,
-      Contrast = names(means),
+      Contrast = colnames(logfc_matrix),
       Mean_logFC = as.numeric(means),
       N_genes = length(genes_present)
     ))
   }
 }
 
-# Clean module names
-module_stats$Module_Clean <- gsub("^[0-9]+\\. ", "", module_stats$Module)
+# Create wide format for heatmap - use unique column names
+# First, add mutation info to make columns unique
+module_stats$ColName <- paste0(
+  rep(c("G32A", "R403C"), each = 3, times = length(unique(module_stats$Module))),
+  "_",
+  module_stats$Contrast
+)[1:nrow(module_stats)]  # Handle potential length mismatch
 
-# Create wide format
-module_wide <- module_stats %>%
-  select(Module_Clean, Contrast, Mean_logFC) %>%
-  pivot_wider(names_from = Contrast, values_from = Mean_logFC)
+# Actually let's do this more carefully
+# The contrast names are "Early", "TrajDev", "Late" repeated twice
+# We need to make them unique before pivoting
+module_stats_unique <- module_stats %>%
+  mutate(
+    Mutation = rep(rep(c("G32A", "R403C"), each = 3), times = length(unique(Module))),
+    ColName = paste0(Mutation, "\n", Contrast)
+  ) %>%
+  select(Module, ColName, Mean_logFC) %>%
+  distinct()
+
+module_wide <- module_stats_unique %>%
+  pivot_wider(names_from = ColName, values_from = Mean_logFC)
 
 module_mat <- as.matrix(module_wide[, -1])
-rownames(module_mat) <- module_wide$Module_Clean
+rownames(module_mat) <- module_wide$Module
 
-# Reorder rows
-module_order <- gsub("^[0-9]+\\. ", "", names(all_module_genes))
-module_mat <- module_mat[module_order[module_order %in% rownames(module_mat)], ]
+# Ensure correct column order
+expected_cols <- c("G32A\nEarly", "G32A\nTrajDev", "G32A\nLate",
+                   "R403C\nEarly", "R403C\nTrajDev", "R403C\nLate")
+module_mat <- module_mat[, expected_cols[expected_cols %in% colnames(module_mat)]]
 
-# Summary heatmap (using unified palette from color_config.R)
-col_fun_summary <- logfc_color_scale(limits = c(-0.6, 0.6))
+# Summary heatmap with same color scale
+col_fun_summary <- colorRamp2(c(-0.3, 0, 0.3), c("#2166AC", "#F7F7F7", "#B35806"))
 
-pdf(file.path(out_dir, "Module_Summary_Heatmap.pdf"), width = 6, height = 5)
+pdf(file.path(out_dir, "Module_Summary_Heatmap.pdf"), width = 7, height = 4)
 
 ht_summary <- Heatmap(
   module_mat,
@@ -417,17 +390,18 @@ ht_summary <- Heatmap(
   cluster_columns = FALSE,
   column_names_gp = gpar(fontsize = 8),
   column_names_rot = 0,
-  column_split = factor(c(rep("G32A", 3), rep("R403C", 3)),
+  column_split = factor(rep(c("G32A", "R403C"), each = 3),
                         levels = c("G32A", "R403C")),
   column_title = "Module-Level Summary (Mean logFC)",
   column_title_gp = gpar(fontface = "bold", fontsize = 11),
   cell_fun = function(j, i, x, y, width, height, fill) {
     grid.text(sprintf("%.2f", module_mat[i, j]),
-              x, y, gp = gpar(fontsize = 7))
+              x, y, gp = gpar(fontsize = 8))
   },
   border = TRUE,
   heatmap_legend_param = list(
     title = "Mean\nlogFC",
+    at = c(-0.3, -0.15, 0, 0.15, 0.3),
     legend_height = unit(2.5, "cm"),
     title_gp = gpar(fontface = "bold", fontsize = 9),
     labels_gp = gpar(fontsize = 8)
@@ -445,15 +419,20 @@ message("✓ Module summary heatmap complete\n")
 
 message("📝 Generating summary...\n")
 
-cat("\n=== Mechanistic Cascade: Real Pathway Gene Sets ===\n\n")
+cat("\n=== Mitochondrial & Calcium Gene Expression Analysis ===\n\n")
 
-cat("Modules extracted from SIGNIFICANT GSEA pathways:\n")
-cat("  1. Mt Central Dogma: MitoCarta (p=2.14e-13)\n")
-cat("  2. Mt Ribosomes: MitoCarta (p=7.98e-04)\n")
-cat("  3. ATP Synthase: GOCC_ATPASE_COMPLEX (p=0.002)\n")
-cat("  4. Synaptic Ribo Common: SynGO pre∩post (p<1e-12)\n")
-cat("  5. Postsynaptic Ribo Only: SynGO post-pre\n")
-cat("  6. Calcium Signaling: REACTOME_ELEVATION_OF_CYTOSOLIC_CA2_LEVELS (p=0.03 in Early)\n\n")
+cat("THREE FOCUSED MODULES:\n")
+cat("  1. ATP Synthase (Complex V): Curated ATP5* subunit genes from KEGG hsa00190\n")
+cat("     - F1 subunits (catalytic): ATP5F1A/B/C/D/E\n")
+cat("     - FO subunits (proton channel): ATP5PB, ATP5MC1-3, ATP5PD/PF/MF/MG/PO/ME/MD\n")
+cat("     - Assembly factors: ATPAF1/2, TMEM70\n\n")
+cat("  2. Calcium Signaling: Study-prioritized genes\n")
+cat("     - Key targets: NNAT (neuronatin), PNPO\n")
+cat("     - Channels: CACNG3, CACNA1S, RYR1\n")
+cat("     - ER calcium sensors: STIM1, STIM2, CALR\n")
+cat("     - Other: ATP2A1, MYLK3, VDR, CALB1\n\n")
+cat("  3. Mt Central Dogma: MitoCarta pathway (GSEA p.adj=2.14e-13)\n")
+cat("     - Top 25 genes by |logFC| from core enrichment\n\n")
 
 cat("Gene counts per module:\n")
 for (mod in names(all_module_genes)) {
@@ -462,14 +441,27 @@ for (mod in names(all_module_genes)) {
 
 cat("\nModule Mean logFC Summary:\n\n")
 print(module_stats %>%
-        select(Module_Clean, Contrast, Mean_logFC) %>%
+        select(Module, Contrast, Mean_logFC) %>%
         pivot_wider(names_from = Contrast, values_from = Mean_logFC) %>%
         as.data.frame(),
       row.names = FALSE)
 
+# List actual genes included
+cat("\n\nGenes included in each module:\n")
+for (mod in names(all_module_genes)) {
+  genes <- all_module_genes[[mod]]
+  cat(sprintf("\n%s (%d genes):\n", mod, length(genes)))
+  cat(sprintf("  %s\n", paste(sort(genes), collapse = ", ")))
+}
+
 cat("\n")
-message("✅ Mechanistic cascade visualization complete!")
+message("✅ Mitochondrial & Calcium visualization complete!")
 message(sprintf("📁 Output directory: %s", out_dir))
 message("\n🎯 KEY OUTPUTS:")
-message("  1. Mechanistic_Cascade_Heatmap.pdf - Gene-level heatmap (6 contrasts)")
+message("  1. Mechanistic_Cascade_Heatmap.pdf - Gene-level heatmap with clustering")
 message("  2. Module_Summary_Heatmap.pdf - Module-level mean summary")
+message("\n🎯 STYLE NOTES:")
+message("  - Matches Panel_C_Expression_Heatmap.pdf (synaptic ribosomes)")
+message("  - Hierarchical clustering within modules shows co-regulated genes")
+message("  - Narrower logFC scale (-0.6 to 0.6) reveals subtle patterns")
+message("  - Dendrogram indicates gene co-regulation relationships")

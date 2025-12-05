@@ -29,7 +29,7 @@ config <- list(
   out_root = here("03_Results/02_Analysis"),
 
   # Significance thresholds
-  p_cutoff = 0.05,
+  fdr_cutoff = 0.05,    # FDR threshold for GSVA t-tests (BH-adjusted)
 
   # Module metadata
   module_info = list(
@@ -216,7 +216,7 @@ ttest_results <- purrr::pmap_dfr(
 ttest_results <- ttest_results %>%
   mutate(
     p_adjusted = p.adjust(p_value, method = "BH"),
-    significant = !is.na(p_adjusted) & p_adjusted < config$p_cutoff
+    significant = !is.na(p_adjusted) & p_adjusted < config$fdr_cutoff
   )
 
 message(sprintf("  ✓ T-tests performed: %d comparisons", nrow(ttest_results)))

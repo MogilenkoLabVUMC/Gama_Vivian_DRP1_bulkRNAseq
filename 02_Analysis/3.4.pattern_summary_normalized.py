@@ -7,13 +7,9 @@ Creates normalized (100% stacked) pattern summary figures to address the issue
 that large databases (gobp with ~5000 pathways) mask the relative pattern
 distributions in smaller databases.
 
-Key improvements over original:
+Key details:
 1. Each database bar normalized to 100% for proportion comparison
 2. Absolute counts shown as text annotations (e.g., "Compensation: 45 (60%)")
-3. Optional dual-panel view: normalized + absolute reference
-
-This script does NOT replace the original pattern_summary figures - it provides
-an alternative perspective focused on relative patterns.
 """
 
 import sys
@@ -337,84 +333,6 @@ def create_dual_panel_comparison(df_counts, mutation='G32A'):
 
 
 # =============================================================================
-# OPTION 3: PERCENTAGE TABLE WITH HEATMAP
-# =============================================================================
-
-def create_percentage_heatmap(df_counts):
-    """
-    Create heatmap showing percentage of each pattern per database.
-
-    Alternative visualization that shows all data in a compact format.
-    """
-    print("\nCreating percentage heatmap...")
-
-    # Filter to meaningful patterns (exclude Complex for cleaner visualization)
-    patterns_to_plot = [p for p in MEANINGFUL_PATTERNS if p != 'Complex']
-    df_meaningful = df_counts[df_counts['Pattern'].isin(patterns_to_plot)].copy()
-
-    fig, axes = plt.subplots(1, 2, figsize=(14, 8), sharey=True)
-
-    for idx, (mutation, ax) in enumerate(zip(['G32A', 'R403C'], axes)):
-        df_mut = df_meaningful[df_meaningful['Mutation'] == mutation]
-
-        # Pivot and calculate percentages
-        pivot = df_mut.pivot_table(
-            index='Database',
-            columns='Pattern',
-            values='Count',
-            fill_value=0
-        )
-
-        databases = sorted(pivot.index)
-        pivot = pivot.reindex(databases, fill_value=0)
-        pattern_order = [p for p in MEANINGFUL_PATTERNS if p in pivot.columns]
-        pivot = pivot[pattern_order]
-
-        # Calculate percentages
-        totals = pivot.sum(axis=1)
-        pivot_pct = pivot.div(totals, axis=0) * 100
-
-        # Plot heatmap
-        im = ax.imshow(pivot_pct.values, cmap='YlOrRd', aspect='auto',
-                      vmin=0, vmax=100)
-
-        # Add percentage text
-        for i in range(len(databases)):
-            for j in range(len(pattern_order)):
-                pct = pivot_pct.iloc[i, j]
-                count = pivot.iloc[i, j]
-                if pct > 0:
-                    text = ax.text(j, i, f'{pct:.0f}%\n(n={int(count)})',
-                                 ha='center', va='center',
-                                 fontsize=8, fontweight='bold',
-                                 color='white' if pct > 50 else 'black')
-
-        # Labels
-        ax.set_xticks(range(len(pattern_order)))
-        ax.set_xticklabels(pattern_order, rotation=45, ha='right', fontsize=9)
-        ax.set_yticks(range(len(databases)))
-        ax.set_yticklabels(databases, fontsize=10)
-
-        ax.set_title(f'{mutation}', fontsize=12, fontweight='bold',
-                    color=MUTATION_COLORS[mutation])
-
-        if idx == 0:
-            ax.set_ylabel('Database', fontsize=11)
-
-    # Add colorbar with much more spacing to avoid overlap
-    cbar = fig.colorbar(im, ax=axes, orientation='horizontal',
-                       pad=1.10, shrink=0.8)
-    cbar.set_label('Percentage of Pathways (%)', fontsize=10)
-
-    fig.suptitle('Pattern Distribution Heatmap (% of total per database)',
-                fontsize=14, fontweight='bold', y=0.97)
-
-    plt.tight_layout(rect=[0, 0.36, 1, 0.78])
-
-    return fig
-
-
-# =============================================================================
 # MAIN EXECUTION
 # =============================================================================
 
@@ -460,16 +378,6 @@ def main():
                 fig2.savefig(output_file, dpi=dpi, bbox_inches='tight', facecolor='white')
                 print(f"  Saved: {output_file.name}")
             plt.close(fig2)
-
-    # Option 3: Percentage heatmap
-    print("\n" + "-"*80)
-    fig3 = create_percentage_heatmap(df_counts)
-    if fig3:
-        for ext, dpi in [('pdf', 300), ('png', 150)]:
-            output_file = OUTPUT_DIR / f'pattern_summary_heatmap.{ext}'
-            fig3.savefig(output_file, dpi=dpi, bbox_inches='tight', facecolor='white')
-            print(f"  Saved: {output_file.name}")
-        plt.close(fig3)
 
     # Summary
     print("\n" + "="*80)

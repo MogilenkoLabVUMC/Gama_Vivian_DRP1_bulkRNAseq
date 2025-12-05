@@ -79,11 +79,13 @@ This directory contains the complete differential expression and pathway enrichm
 
 **Key Parameters:**
 
-| Parameter | Value | Rationale |
-|-----------|-------|-----------|
-| p_cutoff | 0.05 | Standard significance threshold |
-| fc_cutoff | 2 (log2FC > 1) | Biologically meaningful fold-change |
-| FDR threshold | 0.05 | Benjamini-Hochberg adjusted |
+| Parameter | Value | Usage |
+|-----------|-------|-------|
+| fdr_cutoff | 0.05 | DEG classification via limma::decideTests (BH-adjusted) |
+| p_cutoff | 0.05 | Volcano plots (p mode) raw p-value threshold |
+| fc_cutoff | 2 (|log2FC| >= 2) | Volcano plot 4-fold change visualization threshold |
+
+**Note:** DEG counts (bar charts, UpSet plots) use FDR < 0.05 only (no FC cutoff). Volcano plots use FDR ≤ 0.1 (fdr mode) for coloring decisions.
 
 #### 2. Contrast Definitions
 

@@ -45,22 +45,38 @@ message("Gene Ratio on X-axis | NES gradient | Significance outlines")
 message(paste(rep("=", 70), collapse = ""))
 
 message("\n[1/5] Loading checkpoints...")
-all_gsea_results   <- readRDS(file.path(checkpoint_dir, "all_gsea_results.rds"))
-syngo_gsea_results <- readRDS(file.path(checkpoint_dir, "syngo_gsea_results.rds"))
-message("Checkpoints loaded successfully")
+all_gsea_results      <- readRDS(file.path(checkpoint_dir, "all_gsea_results.rds"))
+syngo_gsea_results    <- readRDS(file.path(checkpoint_dir, "syngo_gsea_results.rds"))
+mitocarta_gsea_results <- readRDS(file.path(checkpoint_dir, "mitocarta_gsea_results.rds"))
+message("Checkpoints loaded successfully (MSigDB, SynGO, MitoCarta)")
 
 # Database collections
+# Comprehensive: All MSigDB databases (Hallmark included for broad coverage)
 all_databases <- c("hallmark", "gobp", "gocc", "gomf", "kegg",
                    "reactome", "wiki", "canon", "tf")
-focused_databases <- c("hallmark", "kegg", "reactome")
+# Focused: Curated pathway databases only (SynGO + MitoCarta added separately)
+# Rationale: KEGG/Reactome curated, SynGO neuronal-specific, MitoCarta mito-specific
+focused_databases <- c("kegg", "reactome")
 
-# Priority contrasts
-priority_contrasts <- c(
-  "Maturation_G32A_specific",
-  "Maturation_R403C_specific",
-  "Time_Ctrl",
+# All contrasts - organized by biological interpretation
+# Early (D35): Initial mutation effects
+# Late (D65): Mature neuron mutation effects
+# Time: Maturation trajectory per genotype
+# Interaction: Mutation-specific maturation changes
+all_contrasts <- c(
+  # D35 mutation effects (Early)
+  "G32A_vs_Ctrl_D35",
+  "R403C_vs_Ctrl_D35",
+  # D65 mutation effects (Late)
   "G32A_vs_Ctrl_D65",
-  "R403C_vs_Ctrl_D65"
+  "R403C_vs_Ctrl_D65",
+  # Time/maturation effects
+  "Time_Ctrl",
+  "Time_G32A",
+  "Time_R403C",
+  # Interaction contrasts (mutation-specific maturation)
+  "Maturation_G32A_specific",
+  "Maturation_R403C_specific"
 )
 
 # -------------------------------------------------------------------- #
@@ -68,7 +84,7 @@ priority_contrasts <- c(
 # -------------------------------------------------------------------- #
 message("\n[2/5] Extracting raw pathway data...")
 
-for (co in priority_contrasts) {
+for (co in all_contrasts) {
   message(sprintf("  Processing %s...", co))
 
   if (!co %in% names(all_gsea_results)) {
@@ -122,7 +138,35 @@ for (co in priority_contrasts) {
         arrange(p.adjust)
 
       if (nrow(res) > 0) {
+        # Add SynGO prefix for visual identification
+        res$Description <- paste0("SynGO: ", res$Description)
         res$Database <- "syngo"
+        res$Contrast <- co
+        all_pathways <- rbind(all_pathways, res)
+      }
+    }
+  }
+
+  # Add MitoCarta (mitochondrial pathways - critical for DRP1 mutation study)
+  if (co %in% names(mitocarta_gsea_results)) {
+    db_result <- mitocarta_gsea_results[[co]]
+    if (!is.null(db_result)) {
+      if (is(db_result, "gseaResult")) {
+        res <- as.data.frame(db_result@result)
+      } else if ("result" %in% names(db_result)) {
+        res <- db_result$result
+      } else {
+        res <- as.data.frame(db_result)
+      }
+
+      res <- res %>%
+        filter(p.adjust < 0.05) %>%
+        arrange(p.adjust)
+
+      if (nrow(res) > 0) {
+        # Add MitoCarta prefix for visual identification
+        res$Description <- paste0("MitoCarta: ", res$Description)
+        res$Database <- "mitocarta"
         res$Contrast <- co
         all_pathways <- rbind(all_pathways, res)
       }
@@ -135,9 +179,9 @@ for (co in priority_contrasts) {
               file.path(pooled_csv_dir, sprintf("%s_raw_comprehensive.csv", co)),
               row.names = FALSE)
 
-    # Focused version
+    # Focused version (KEGG, Reactome, SynGO, MitoCarta)
     focused_pathways <- all_pathways %>%
-      filter(Database %in% c(focused_databases, "syngo"))
+      filter(Database %in% c(focused_databases, "syngo", "mitocarta"))
 
     if (nrow(focused_pathways) > 0) {
       write.csv(focused_pathways,
@@ -152,7 +196,7 @@ for (co in priority_contrasts) {
 # -------------------------------------------------------------------- #
 message("\n[3/5] Applying neuronal maturation filters...")
 
-for (co in priority_contrasts) {
+for (co in all_contrasts) {
   message(sprintf("  Processing %s...", co))
 
   # Filter comprehensive version
@@ -181,7 +225,7 @@ for (co in priority_contrasts) {
 # -------------------------------------------------------------------- #
 message("\n[4/5] Generating comprehensive visualizations (with significance outlines)...")
 
-for (co in priority_contrasts) {
+for (co in all_contrasts) {
   message(sprintf("  Processing %s...", co))
 
   filtered_csv <- file.path(pooled_csv_dir, sprintf("%s_filtered_comprehensive.csv", co))
@@ -219,7 +263,7 @@ for (co in priority_contrasts) {
 # -------------------------------------------------------------------- #
 message("\n[5/5] Generating focused visualizations (with significance outlines)...")
 
-for (co in priority_contrasts) {
+for (co in all_contrasts) {
   message(sprintf("  Processing %s...", co))
 
   filtered_csv <- file.path(pooled_csv_dir, sprintf("%s_filtered_focused.csv", co))
