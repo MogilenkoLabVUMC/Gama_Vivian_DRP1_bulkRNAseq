@@ -1,11 +1,14 @@
 cff-version: 1.1.0
 message: "If you use this software, please cite it as below."
 type: software
-title: "MogilenkoLabVUMC/Gama_Vivian_DRP1_bulkRNAseq: v2.0.0 Re-submission"
+title: "Gama_Vivian_DRP1_bulkRNAseq: v2.0.0"
 version: "v2.0.0"
 date-released: "2025-12-05"
 authors:
-  - family-names: Joe
-    given-names: Johnson
-    orcid: "https://orcid.org/0000-0000-0000-0000"
+  - family-names: Zhelonkin
+    given-names: Anton
+    orcid: "https://orcid.org/0000-0001-9013-3197"
+  - family-names: Mogilenko
+    given-names: Denis
+    orcid: "https://orcid.org/0000-0001-5427-5243"
 repository-code: "https://github.com/MogilenkoLabVUMC/Gama_Vivian_DRP1_bulkRNAseq"

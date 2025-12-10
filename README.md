@@ -1,7 +1,12 @@
 # DRP1 Bulk RNA-seq Analysis
 
-# Repositry analyst and maintainer 
+# Bioinformatics analyst and github repo maintainer 
 [Anton Zhelonkin, MD](https://github.com/tony-zhelonkin)
+# Project supervisor 
+[Denis Mogilenko, PhD](https://github.com/MogilenkoLab)
+# Principal Investigator
+[Vivian Gama](https://medschool.vanderbilt.edu/cdb/person/vivian-gama-ph-d/)
+
 
 # Intro
 
