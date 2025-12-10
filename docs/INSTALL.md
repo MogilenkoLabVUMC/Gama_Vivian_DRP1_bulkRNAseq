@@ -24,7 +24,7 @@ git checkout tags/v0.5.1
 
 # 2. Clone this analysis repository
 cd ..
-git clone <repo-url>
+git clone git@github.com:MogilenkoLabVUMC/Gama_Vivian_DRP1_bulkRNAseq.git
 cd Gama_Vivian_DRP1_bulkRNAseq
 
 # 3. Initialize git submodules (RNAseq-toolkit)
@@ -87,10 +87,10 @@ docker images | grep scdock-r-dev
 
 ```bash
 cd ..  # Leave scbio-docker directory
-git clone <repo-url>
+git clone git@github.com:MogilenkoLabVUMC/Gama_Vivian_DRP1_bulkRNAseq.git
 cd Gama_Vivian_DRP1_bulkRNAseq
 
-# Initialize submodules (RNAseq-toolkit helper functions)
+# Initialize submodule (RNAseq-toolkit helper functions)
 git submodule update --init --recursive
 
 # Verify submodule

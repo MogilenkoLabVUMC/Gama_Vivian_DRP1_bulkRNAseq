@@ -7,6 +7,7 @@ Step-by-step instructions to get started with the migrated GVDRP1 bulk RNA-seq a
 ## Prerequisites
 - Docker installed and running
 - [scbio-dock v0.5.1](https://github.com/tony-zhelonkin/scbio-docker/tree/v0.5.1) docker image built and available
+- project specific branch of [RNAseq-toolkit](https://github.com/tony-zhelonkin/RNAseq-toolkit/tree/dev-GVDRP1) initialized as a submodule (dev-GVDRP1 branch ensures the pre-production state of external RNAseq scripts is frozen at the state the main analysis was performed for future reproducibility)
 - VS Code with Dev Containers extension
 - SSH keys configured for GitHub access (to clone the RNAseq-toolkit submodule)
 
@@ -181,7 +182,7 @@ git submodule status
 
 ### Issue: httpgd or other R packages not found
 
-Key packages are pre-installed and frozen from modifications/updates with the [scbio-docker v0.5.1](https://github.com/tony-zhelonkin/scbio-docker/tree/v0.5.1), but should any packages necessary for the analysis be missing, they can be installed at runtime.
+Key packages are pre-installed and frozen from modifications/updates with the [scbio-docker v0.5.1](https://github.com/tony-zhelonkin/scbio-docker/tree/v0.5.1), but any missing packages necessary for the analysis, are installed at runtime.
 
 **Solution:** Install from within container:
 ```r

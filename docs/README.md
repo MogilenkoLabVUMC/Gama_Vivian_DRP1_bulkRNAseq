@@ -2,7 +2,7 @@
 
 This directory contains comprehensive documentation for the DRP1 bulk RNA-seq analysis project.
 
-**Last Updated:** 2025-12-04
+**Last Updated:** 2025-12-09
 
 ---
 
@@ -11,12 +11,14 @@ This directory contains comprehensive documentation for the DRP1 bulk RNA-seq an
 | Need | Documentation |
 |------|---------------|
 | Project overview | [../README.md](../README.md) |
-| Setup instructions | [../SETUP.md](../SETUP.md) or [../INSTALL.md](../INSTALL.md) |
-| Analysis architecture | [../CLAUDE.md](../CLAUDE.md) |
+| Setup instructions | [SETUP.md](SETUP.md) or [INSTALL.md](INSTALL.md) |
+| Analysis architecture | [CLAUDE.md](CLAUDE.md) |
 | Script reference | [../02_Analysis/SCRIPTS.md](../02_Analysis/SCRIPTS.md) |
 | **Pattern classification** | [PATTERN_CLASSIFICATION.md](PATTERN_CLASSIFICATION.md) |
 | Scientific background | [bio_notes.md](bio_notes.md) |
 | Version history | [CHANGELOG.md](CHANGELOG.md) |
+| Data lineage | [DATA_LINEAGE.md](DATA_LINEAGE.md) |
+| Migration notes | [MIGRATION.md](MIGRATION.md) |
 
 ---
 
@@ -44,22 +46,31 @@ This directory contains comprehensive documentation for the DRP1 bulk RNA-seq an
   - Energy-translation crisis model
   - Calcium dysregulation, epilepsy mechanisms, and critical period plasticity
 
+### Setup and Installation
+
+- **[SETUP.md](SETUP.md)** - Quick setup guide:
+  - Container setup via VS Code Dev Containers
+  - Environment verification
+  - Quick start commands
+
+- **[INSTALL.md](INSTALL.md)** - Detailed installation instructions:
+  - Prerequisites and system requirements
+  - Step-by-step container setup
+  - Troubleshooting common issues
+
+### Analysis Architecture
+
+- **[CLAUDE.md](CLAUDE.md)** - Claude Code instructions and architecture:
+  - Repository structure and pipeline overview
+  - Essential commands and workflows
+  - Pattern classification system synchronization
+  - Common tasks and troubleshooting
+
 ### Project Documentation
 
 - **[CHANGELOG.md](CHANGELOG.md)** - Version history, improvements, and changes since v1.0
 - **[MIGRATION.md](MIGRATION.md)** - Technical migration notes from original workstation setup
-
-### Technical Documentation
-
-- **[SCRIPT_DEPENDENCY_ANALYSIS.md](SCRIPT_DEPENDENCY_ANALYSIS.md)** - Analysis of script dependencies:
-  - Pipeline flow from R exports to Python visualizations
-  - Master table generation workflow
-  - Data loader module architecture
-
-- **[ARCHIVED_CONTENT.md](ARCHIVED_CONTENT.md)** - Inventory of archived and deprecated content:
-  - What's archived and why
-  - Navigation from archived to current files
-  - Archiving guidelines
+- **[DATA_LINEAGE.md](DATA_LINEAGE.md)** - Data provenance and processing history
 
 ---
 
@@ -68,12 +79,12 @@ This directory contains comprehensive documentation for the DRP1 bulk RNA-seq an
 ### For New Users
 
 1. Start with [../README.md](../README.md) - Project overview and key findings
-2. Then [../SETUP.md](../SETUP.md) - Quick setup guide
-3. Optionally [../INSTALL.md](../INSTALL.md) - Detailed installation instructions
+2. Then [SETUP.md](SETUP.md) - Quick setup guide
+3. Optionally [INSTALL.md](INSTALL.md) - Detailed installation instructions
 
 ### For Developers
 
-1. Start with [../CLAUDE.md](../CLAUDE.md) - Claude Code instructions and architecture
+1. Start with [CLAUDE.md](CLAUDE.md) - Claude Code instructions and architecture
 2. Reference [../02_Analysis/SCRIPTS.md](../02_Analysis/SCRIPTS.md) - Complete script inventory
 3. Review [PATTERN_CLASSIFICATION.md](PATTERN_CLASSIFICATION.md) - Pattern system documentation
 4. Check [../01_Scripts/Python/README.md](../01_Scripts/Python/README.md) - Python module architecture
@@ -113,10 +124,10 @@ Individual plot folders contain detailed README files explaining:
 
 ## Historical Archive
 
-### Frozen Analysis (v1.0)
+### Frozen Analysis (v2.0.0)
 
 Manuscript submission version:
-- Git tag: `v1.0` (commit `d6ec164`)
+- Git tag: `v2.0.0` (commit `d6ec164`)
 - Archive: `../03_Results/02_Analysis/.archive/1stRun/`
 - Deprecated plots: `../03_Results/02_Analysis/Plots/.deprecated/`
 
@@ -137,22 +148,21 @@ Documentation from specific analysis sessions:
 ```
 docs/
 ├── README.md                      # This index
+├── CLAUDE.md                      # Claude Code instructions and architecture
+├── SETUP.md                       # Quick setup guide
+├── INSTALL.md                     # Detailed installation instructions
 ├── PATTERN_CLASSIFICATION.md      # Pattern system (canonical)
 ├── bio_notes.md                   # Curated biological notes
 ├── CHANGELOG.md                   # Version history
 ├── MIGRATION.md                   # Migration notes
-├── SCRIPT_DEPENDENCY_ANALYSIS.md  # Pipeline dependencies
-├── ARCHIVED_CONTENT.md            # Archive inventory
+├── DATA_LINEAGE.md                # Data provenance
 └── archive/
     ├── 2025-11-26_pattern_cleanup/
     ├── 2025-11-26_pattern_verification/
     └── mapping.md
 
 Root documentation:
-├── README.md                      # Project overview
-├── CLAUDE.md                      # Claude Code instructions
-├── SETUP.md                       # Quick setup
-└── INSTALL.md                     # Detailed installation
+└── README.md                      # Project overview
 ```
 
 ---
